@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>工場稼働管理</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --hairline: rgba(11, 11, 11, 0.10);
+    --grid: #e1e0d9;
+    --accent: #2a78d6;
+
+    /* 状態色（仕様: 稼働中=ティール / 段取り中=オーカー / 停止=レンガ赤 / 計画停止=グレー） */
+    --st-running: #0e7a6c;
+    --st-running-bg: rgba(14, 122, 108, 0.12);
+    --st-changeover: #96640a;
+    --st-changeover-bg: rgba(196, 138, 24, 0.16);
+    --st-stopped: #b3402e;
+    --st-stopped-bg: rgba(179, 64, 46, 0.12);
+    --st-idle: #6a6a66;
+    --st-idle-bg: rgba(106, 106, 102, 0.12);
+
+    --danger: #b3402e;
+    --shadow: 0 8px 24px rgba(11, 11, 11, 0.14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --hairline: rgba(255, 255, 255, 0.10);
+      --grid: #2c2c2a;
+      --accent: #3987e5;
+
+      --st-running: #35b8a5;
+      --st-running-bg: rgba(53, 184, 165, 0.16);
+      --st-changeover: #e0a63c;
+      --st-changeover-bg: rgba(224, 166, 60, 0.16);
+      --st-stopped: #e4715c;
+      --st-stopped-bg: rgba(228, 113, 92, 0.16);
+      --st-idle: #a0a09a;
+      --st-idle-bg: rgba(160, 160, 154, 0.14);
+
+      --danger: #e4715c;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--ink);
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+
+  /* ---- ヘッダー ---- */
+  header {
+    padding: 16px 16px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--hairline);
+  }
+  header h1 { font-size: 18px; font-weight: 700; }
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .kpi {
+    background: var(--page);
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .kpi .v { font-size: 22px; font-weight: 700; line-height: 1.2; }
+  .kpi .v small { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .kpi .l { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+
+  /* ---- ツールバー ---- */
+  .toolbar {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--page);
+    padding: 10px 16px 8px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .search {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .search::placeholder { color: var(--muted); }
+  .chips {
+    display: flex; gap: 8px; margin-top: 8px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    color: var(--ink-2);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--page);
+    font-weight: 600;
+  }
+
+  /* ---- 機械一覧 ---- */
+  main { padding: 12px 16px; display: grid; gap: 10px; }
+  .count-line { font-size: 12px; color: var(--muted); }
+  .card {
+    width: 100%;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    display: grid;
+    gap: 8px;
+  }
+  .card:active { transform: scale(0.99); }
+  .card .row1 { display: flex; align-items: center; gap: 8px; }
+  .card .no { font-size: 17px; font-weight: 700; }
+  .card .model { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .status {
+    margin-left: auto;
+    flex: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .st-running { color: var(--st-running); background: var(--st-running-bg); }
+  .st-changeover { color: var(--st-changeover); background: var(--st-changeover-bg); }
+  .st-stopped { color: var(--st-stopped); background: var(--st-stopped-bg); }
+  .st-idle { color: var(--st-idle); background: var(--st-idle-bg); }
+
+  .card .row2 { display: flex; align-items: baseline; gap: 12px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
+  .card .sku { font-weight: 600; color: var(--ink); }
+  .card .due { margin-left: auto; }
+  .due.soon { color: var(--st-changeover); font-weight: 600; }
+  .due.overdue { color: var(--st-stopped); font-weight: 600; }
+
+  .meter { display: flex; align-items: center; gap: 8px; }
+  .meter .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--grid); overflow: hidden; }
+  .meter .bar i { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+  .meter .pct { font-size: 12px; color: var(--ink-2); min-width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .card .note { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .empty {
+    text-align: center; color: var(--muted);
+    padding: 48px 16px; font-size: 14px; line-height: 1.8;
+  }
+  .empty button {
+    display: block; margin: 12px auto 0;
+    padding: 10px 18px; border-radius: 10px;
+    border: 1px solid var(--hairline); background: var(--surface); cursor: pointer;
+  }
+
+  /* ---- フローティングボタン ---- */
+  .fabs {
+    position: fixed;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+    z-index: 6;
+  }
+  .fab {
+    border: none; cursor: pointer;
+    border-radius: 999px;
+    box-shadow: var(--shadow);
+    font-weight: 600;
+  }
+  .fab-add {
+    width: 56px; height: 56px; font-size: 28px; line-height: 1;
+    background: var(--ink); color: var(--page);
+  }
+  .fab-bulk {
+    padding: 8px 14px; font-size: 12px;
+    background: var(--surface); color: var(--ink-2);
+    border: 1px solid var(--hairline);
+  }
+
+  /* ---- シート（編集 / 一括登録） ---- */
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    background: rgba(0, 0, 0, 0.45);
+    display: none;
+  }
+  .overlay.open { display: block; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
+    background: var(--surface);
+    border-radius: 16px 16px 0 0;
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+    max-height: 88vh; overflow-y: auto;
+    transform: translateY(105%);
+    transition: transform 0.2s ease;
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet h2 { font-size: 16px; margin-bottom: 12px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--page);
+  }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sheet .actions { display: grid; gap: 10px; margin-top: 16px; }
+  .btn {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--hairline);
+    background: var(--surface);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-primary { background: var(--ink); color: var(--page); border-color: var(--ink); }
+  .btn-danger { color: var(--danger); }
+
+  /* ---- トースト ---- */
+  .toast {
+    position: fixed; left: 16px; right: 16px;
+    bottom: calc(90px + env(safe-area-inset-bottom));
+    z-index: 20;
+    background: var(--ink); color: var(--page);
+    padding: 12px 14px; border-radius: 12px;
+    font-size: 13px; box-shadow: var(--shadow);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error { background: var(--danger); color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>工場稼働管理</h1>
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kpiUptime">–</div><div class="l">平均稼働率</div></div>
+    <div class="kpi"><div class="v" id="kpiRunning">–</div><div class="l">稼働中 / 全台数</div></div>
+    <div class="kpi"><div class="v" id="kpiChange">–</div><div class="l">今週の段取り</div></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <input class="search" id="search" type="search" placeholder="号機・品番・機種で検索" autocomplete="off">
+  <div class="chips" id="chips"></div>
+</div>
+
+<main id="list"></main>
+
+<div class="fabs">
+  <button class="fab fab-bulk" id="fabBulk" type="button">一括登録</button>
+  <button class="fab fab-add" id="fabAdd" type="button" aria-label="機械を追加">＋</button>
+</div>
+
+<!-- 編集シート -->
+<div class="overlay" id="editOverlay"></div>
+<form class="sheet" id="editSheet">
+  <h2 id="editTitle">機械を追加</h2>
+  <div class="grid2">
+    <div class="field">
+      <label for="fNo">号機番号 *</label>
+      <input id="fNo" required placeholder="例: 01">
+    </div>
+    <div class="field">
+      <label for="fModel">機種</label>
+      <input id="fModel" placeholder="例: 福原 V-LEC4">
+    </div>
+  </div>
+  <div class="field">
+    <label for="fStatus">状態</label>
+    <select id="fStatus">
+      <option value="running">稼働中</option>
+      <option value="changeover">段取り中</option>
+      <option value="stopped">停止</option>
+      <option value="idle" selected>計画停止</option>
+    </select>
+  </div>
+  <div class="grid2">
+    <div class="field">
+      <label for="fSku">現在品番</label>
+      <input id="fSku" placeholder="例: AB-1234">
+    </div>
+    <div class="field">
+      <label for="fUptime">稼働率（%）</label>
+      <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
+    </div>
+  </div>
+  <div class="field">
+    <label for="fNext">次回段取り予定日</label>
+    <input id="fNext" type="date">
+  </div>
+  <div class="field">
+    <label for="fNote">メモ</label>
+    <textarea id="fNote" placeholder="トラブル内容・引き継ぎ事項など"></textarea>
+  </div>
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">保存</button>
+    <button class="btn" type="button" id="btnCancel">キャンセル</button>
+    <button class="btn btn-danger" type="button" id="btnDelete" hidden>この機械を削除</button>
+  </div>
+</form>
+
+<!-- 一括登録シート -->
+<div class="overlay" id="bulkOverlay"></div>
+<form class="sheet" id="bulkSheet">
+  <h2>一括登録</h2>
+  <div class="grid2">
+    <div class="field">
+      <label for="bCount">台数 *</label>
+      <input id="bCount" type="number" inputmode="numeric" min="1" max="200" step="1" required placeholder="例: 50">
+    </div>
+    <div class="field">
+      <label for="bPrefix">号機の接頭辞</label>
+      <input id="bPrefix" placeholder="例: K-（空欄可）">
+    </div>
+  </div>
+  <p class="hint" style="font-size:12px;color:var(--muted);margin-bottom:4px;">
+    号機は「接頭辞＋連番（01, 02, …）」で採番し、既存の号機がある場合は続きの番号から作成します。初期状態は「計画停止」です。
+  </p>
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">作成する</button>
+    <button class="btn" type="button" id="btnBulkCancel">キャンセル</button>
+  </div>
+</form>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+
+// ---- 定数・状態 ----
+const STORAGE_KEY = "factory-machines-v1";
+const STATUS = {
+  running:    { label: "稼働中",   cls: "st-running" },
+  changeover: { label: "段取り中", cls: "st-changeover" },
+  stopped:    { label: "停止",     cls: "st-stopped" },
+  idle:       { label: "計画停止", cls: "st-idle" },
+};
+
+let machines = [];
+let filterStatus = "all";
+let query = "";
+let editingId = null; // null = 新規追加
+
+// ---- 永続化 ----
+function loadMachines() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    showToast("保存データの読み込みに失敗しました", true);
+    return [];
+  }
+}
+
+function saveMachines() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
+    return true;
+  } catch (e) {
+    showToast("保存に失敗しました。空き容量やブラウザ設定を確認してください", true);
+    return false;
+  }
+}
+
+// ---- ユーティリティ ----
+function uid() {
+  return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[c]);
+}
+
+// 号機番号の自然順ソート（"2" < "10"、接頭辞は文字列比較）
+function compareNo(a, b) {
+  return String(a.no).localeCompare(String(b.no), "ja", { numeric: true });
+}
+
+// 次回段取り予定日までの日数（今日=0）。無効な日付は null
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!m) return null;
+  const target = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (isNaN(target)) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((target - today) / 86400000);
+}
+
+function dueText(days) {
+  if (days === null) return "";
+  if (days < 0) return `段取り ${-days}日超過`;
+  if (days === 0) return "段取り 今日";
+  return `段取り あと${days}日`;
+}
+
+// ---- サマリー ----
+function renderSummary() {
+  const total = machines.length;
+  const running = machines.filter(m => m.status === "running").length;
+  const avg = total
+    ? Math.round(machines.reduce((s, m) => s + (Number(m.uptime) || 0), 0) / total)
+    : null;
+  const weekly = machines.filter(m => {
+    const d = daysUntil(m.nextChange);
+    return d !== null && d >= 0 && d <= 7;
+  }).length;
+
+  document.getElementById("kpiUptime").innerHTML =
+    avg === null ? "–" : `${avg}<small>%</small>`;
+  document.getElementById("kpiRunning").innerHTML =
+    `${running}<small> / ${total}</small>`;
+  document.getElementById("kpiChange").innerHTML =
+    `${weekly}<small>件</small>`;
+}
+
+// ---- 一覧 ----
+function filteredMachines() {
+  const q = query.trim().toLowerCase();
+  return machines
+    .filter(m => filterStatus === "all" || m.status === filterStatus)
+    .filter(m => {
+      if (!q) return true;
+      return [m.no, m.sku, m.model].some(v =>
+        String(v ?? "").toLowerCase().includes(q));
+    })
+    .sort(compareNo);
+}
+
+function renderList() {
+  const list = document.getElementById("list");
+  const items = filteredMachines();
+
+  if (machines.length === 0) {
+    list.innerHTML = `
+      <div class="empty">
+        まだ機械が登録されていません。<br>
+        右下の「＋」で1台ずつ、または「一括登録」でまとめて追加できます。
+        <button type="button" id="emptyBulk">一括登録をはじめる</button>
+      </div>`;
+    document.getElementById("emptyBulk").addEventListener("click", openBulkSheet);
+    return;
+  }
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty">条件に一致する機械がありません。</div>`;
+    return;
+  }
+
+  const html = items.map(m => {
+    const st = STATUS[m.status] || STATUS.idle;
+    const days = daysUntil(m.nextChange);
+    const dueCls = days === null ? "" : days < 0 ? "overdue" : days <= 7 ? "soon" : "";
+    const uptime = Math.max(0, Math.min(100, Number(m.uptime) || 0));
+    return `
+      <button class="card" type="button" data-id="${escapeHtml(m.id)}">
+        <span class="row1">
+          <span class="no">${escapeHtml(m.no)}号機</span>
+          <span class="model">${escapeHtml(m.model)}</span>
+          <span class="status ${st.cls}">${st.label}</span>
+        </span>
+        <span class="row2">
+          <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+          ${days !== null ? `<span class="due ${dueCls}">${dueText(days)}</span>` : ""}
+        </span>
+        <span class="meter">
+          <span class="bar"><i style="width:${uptime}%"></i></span>
+          <span class="pct">${uptime}%</span>
+        </span>
+        ${m.note ? `<span class="note">${escapeHtml(m.note)}</span>` : ""}
+      </button>`;
+  }).join("");
+
+  list.innerHTML =
+    `<div class="count-line">${items.length}台を表示中（全${machines.length}台）</div>` + html;
+
+  list.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("click", () => openEditSheet(card.dataset.id));
+  });
+}
+
+// ---- フィルターチップ ----
+function renderChips() {
+  const defs = [["all", "すべて"]].concat(
+    Object.entries(STATUS).map(([k, v]) => [k, v.label]));
+  const chips = document.getElementById("chips");
+  chips.innerHTML = defs.map(([k, label]) => {
+    const n = k === "all" ? machines.length : machines.filter(m => m.status === k).length;
+    return `<button class="chip" type="button" data-status="${k}"
+      aria-pressed="${filterStatus === k}">${label}（${n}）</button>`;
+  }).join("");
+  chips.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      filterStatus = chip.dataset.status;
+      renderChips();
+      renderList();
+    });
+  });
+}
+
+function renderAll() {
+  renderSummary();
+  renderChips();
+  renderList();
+}
+
+// ---- 編集シート ----
+const editOverlay = document.getElementById("editOverlay");
+const editSheet = document.getElementById("editSheet");
+
+function openEditSheet(id) {
+  editingId = id || null;
+  const m = id ? machines.find(x => x.id === id) : null;
+
+  document.getElementById("editTitle").textContent = m ? `${m.no}号機を編集` : "機械を追加";
+  document.getElementById("fNo").value = m ? m.no : "";
+  document.getElementById("fModel").value = m ? m.model || "" : "";
+  document.getElementById("fStatus").value = m ? m.status : "idle";
+  document.getElementById("fSku").value = m ? m.sku || "" : "";
+  document.getElementById("fUptime").value = m && m.uptime != null ? m.uptime : "";
+  document.getElementById("fNext").value = m ? m.nextChange || "" : "";
+  document.getElementById("fNote").value = m ? m.note || "" : "";
+  document.getElementById("btnDelete").hidden = !m;
+
+  editOverlay.classList.add("open");
+  editSheet.classList.add("open");
+}
+
+function closeEditSheet() {
+  editOverlay.classList.remove("open");
+  editSheet.classList.remove("open");
+  editingId = null;
+}
+
+editSheet.addEventListener("submit", e => {
+  e.preventDefault();
+  const no = document.getElementById("fNo").value.trim();
+  if (!no) return;
+
+  const uptimeRaw = document.getElementById("fUptime").value;
+  const uptime = uptimeRaw === "" ? 0
+    : Math.max(0, Math.min(100, Math.round(Number(uptimeRaw)) || 0));
+
+  const data = {
+    no,
+    model: document.getElementById("fModel").value.trim(),
+    status: document.getElementById("fStatus").value,
+    sku: document.getElementById("fSku").value.trim(),
+    uptime,
+    nextChange: document.getElementById("fNext").value,
+    note: document.getElementById("fNote").value.trim(),
+  };
+
+  if (editingId) {
+    const i = machines.findIndex(x => x.id === editingId);
+    if (i >= 0) machines[i] = { ...machines[i], ...data };
+  } else {
+    machines.push({ id: uid(), ...data });
+  }
+
+  if (saveMachines()) {
+    closeEditSheet();
+    renderAll();
+    showToast("保存しました");
+  }
+});
+
+document.getElementById("btnDelete").addEventListener("click", () => {
+  const m = machines.find(x => x.id === editingId);
+  if (!m) return;
+  if (!confirm(`${m.no}号機を削除します。よろしいですか？`)) return;
+  machines = machines.filter(x => x.id !== editingId);
+  if (saveMachines()) {
+    closeEditSheet();
+    renderAll();
+    showToast("削除しました");
+  }
+});
+
+document.getElementById("btnCancel").addEventListener("click", closeEditSheet);
+editOverlay.addEventListener("click", closeEditSheet);
+document.getElementById("fabAdd").addEventListener("click", () => openEditSheet(null));
+
+// ---- 一括登録シート ----
+const bulkOverlay = document.getElementById("bulkOverlay");
+const bulkSheet = document.getElementById("bulkSheet");
+
+function openBulkSheet() {
+  bulkOverlay.classList.add("open");
+  bulkSheet.classList.add("open");
+}
+function closeBulkSheet() {
+  bulkOverlay.classList.remove("open");
+  bulkSheet.classList.remove("open");
+}
+
+bulkSheet.addEventListener("submit", e => {
+  e.preventDefault();
+  const count = Math.round(Number(document.getElementById("bCount").value));
+  const prefix = document.getElementById("bPrefix").value.trim();
+  if (!count || count < 1) return;
+
+  // 同じ接頭辞の既存号機から最大の連番を探し、続きから採番する
+  let start = 0;
+  for (const m of machines) {
+    const no = String(m.no);
+    if (!no.startsWith(prefix)) continue;
+    const n = Number(no.slice(prefix.length));
+    if (Number.isInteger(n) && n > start) start = n;
+  }
+
+  for (let i = 1; i <= count; i++) {
+    const num = String(start + i).padStart(2, "0");
+    machines.push({
+      id: uid(),
+      no: prefix + num,
+      model: "",
+      status: "idle",
+      sku: "",
+      uptime: 0,
+      nextChange: "",
+      note: "",
+    });
+  }
+
+  if (saveMachines()) {
+    closeBulkSheet();
+    bulkSheet.reset();
+    renderAll();
+    showToast(`${count}台を一括登録しました`);
+  }
+});
+
+document.getElementById("btnBulkCancel").addEventListener("click", closeBulkSheet);
+bulkOverlay.addEventListener("click", closeBulkSheet);
+document.getElementById("fabBulk").addEventListener("click", openBulkSheet);
+
+// ---- 検索 ----
+document.getElementById("search").addEventListener("input", e => {
+  query = e.target.value;
+  renderList();
+});
+
+// ---- トースト ----
+let toastTimer = null;
+function showToast(msg, isError) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.toggle("error", !!isError);
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), isError ? 5000 : 2200);
+}
+
+// ---- 起動 ----
+machines = loadMachines();
+renderAll();
+</script>
+</body>
+</html>
