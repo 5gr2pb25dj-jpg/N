@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>工場稼働管理</title>
+
+<!-- ホーム画面追加（PWA）用設定 -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0b0b0b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="稼働管理">
+
 <style>
   :root {
     color-scheme: light;
@@ -68,6 +79,7 @@
   /* ---- ヘッダー ---- */
   header {
     padding: 16px 16px 12px;
+    padding-top: max(16px, env(safe-area-inset-top));
     background: var(--surface);
     border-bottom: 1px solid var(--hairline);
   }
