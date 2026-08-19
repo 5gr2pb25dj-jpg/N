@@ -9,115 +9,147 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0b0b0b">
+<meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="稼働管理">
 
 <style>
+  /* ============================================================
+     単一ダークテーマ（意図的な選択）。
+     すべての色をトークンで定義し、body に必ず背景を塗る。
+     ============================================================ */
   :root {
-    color-scheme: light;
-    --page: #f9f9f7;
-    --surface: #fcfcfb;
-    --ink: #0b0b0b;
-    --ink-2: #52514e;
-    --muted: #898781;
-    --hairline: rgba(11, 11, 11, 0.10);
-    --grid: #e1e0d9;
-    --accent: #2a78d6;
+    color-scheme: dark;
 
-    /* 状態色（仕様: 稼働中=ティール / 段取り中=オーカー / 停止=レンガ赤 / 計画停止=グレー） */
-    --st-running: #0e7a6c;
-    --st-running-bg: rgba(14, 122, 108, 0.12);
-    --st-changeover: #96640a;
-    --st-changeover-bg: rgba(196, 138, 24, 0.16);
-    --st-stopped: #b3402e;
-    --st-stopped-bg: rgba(179, 64, 46, 0.12);
-    --st-idle: #6a6a66;
-    --st-idle-bg: rgba(106, 106, 102, 0.12);
+    --bg:        #0a0b0d;
+    --panel:     #14171b;
+    --panel-2:   #1b1f25;
+    --panel-3:   #23282f;
+    --line:      rgba(255, 255, 255, 0.09);
+    --line-2:    rgba(255, 255, 255, 0.16);
 
-    --danger: #b3402e;
-    --shadow: 0 8px 24px rgba(11, 11, 11, 0.14);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color-scheme: dark;
-      --page: #0d0d0d;
-      --surface: #1a1a19;
-      --ink: #ffffff;
-      --ink-2: #c3c2b7;
-      --muted: #898781;
-      --hairline: rgba(255, 255, 255, 0.10);
-      --grid: #2c2c2a;
-      --accent: #3987e5;
+    --ink:       #e9ebee;
+    --ink-2:     #949aa2;
+    --muted:     #6a7079;
 
-      --st-running: #35b8a5;
-      --st-running-bg: rgba(53, 184, 165, 0.16);
-      --st-changeover: #e0a63c;
-      --st-changeover-bg: rgba(224, 166, 60, 0.16);
-      --st-stopped: #e4715c;
-      --st-stopped-bg: rgba(228, 113, 92, 0.16);
-      --st-idle: #a0a09a;
-      --st-idle-bg: rgba(160, 160, 154, 0.14);
+    --accent:    #ffd426;
+    --accent-in: #14171b;
+    --accent-dim: rgba(255, 212, 38, 0.13);
 
-      --danger: #e4715c;
-      --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    }
+    /* 状態色 */
+    --st-running:    #22c39a;
+    --st-changeover: #ffb020;
+    --st-stopped:    #ff5b52;
+    --st-idle:       #767c85;
+
+    /* 糸の系統色（表・中・裏） */
+    --yarn-f: #4a9eff;
+    --yarn-m: #e08a3c;
+    --yarn-b: #22b898;
+
+    --danger: #ff5b52;
+    --good:   #22c39a;
+
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    background: var(--page);
+    background: var(--bg);
     color: var(--ink);
-    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased;
   }
   button, input, select, textarea { font: inherit; color: inherit; }
+  input, select, textarea { -webkit-appearance: none; appearance: none; }
 
-  /* ---- ヘッダー ---- */
-  header {
-    padding: 16px 16px 12px;
-    padding-top: max(16px, env(safe-area-inset-top));
-    background: var(--surface);
-    border-bottom: 1px solid var(--hairline);
+  /* 角を斜めにカット（アークナイツ風） */
+  .notch  { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
+  .notch-s{ clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); }
+
+  /* 英字マイクロラベル */
+  .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
   }
-  header h1 { font-size: 18px; font-weight: 700; }
+
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------------- ヘッダー ---------------- */
+  header {
+    background:
+      linear-gradient(180deg, var(--panel) 0%, var(--bg) 100%);
+    padding: 16px 14px 14px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  header::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 56px, transparent 56px);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .mark {
+    width: 26px; height: 26px; flex: none;
+    background: var(--accent);
+    clip-path: polygon(50% 0, 100% 32%, 50% 100%, 0 32%);
+  }
+  .brand h1 { font-size: 17px; font-weight: 800; letter-spacing: 0.04em; }
+  .brand .sub { margin-left: auto; text-align: right; line-height: 1.35; }
+
   .kpis {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-top: 12px;
+    gap: 6px;
+    margin-top: 14px;
   }
   .kpi {
-    background: var(--page);
-    border: 1px solid var(--hairline);
-    border-radius: 12px;
-    padding: 10px 8px;
-    text-align: center;
+    background: var(--panel-2);
+    border-left: 2px solid var(--accent);
+    padding: 9px 10px 8px;
   }
-  .kpi .v { font-size: 22px; font-weight: 700; line-height: 1.2; }
-  .kpi .v small { font-size: 13px; font-weight: 600; color: var(--ink-2); }
-  .kpi .l { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+  .kpi .v { font-size: 21px; font-weight: 800; line-height: 1.1; letter-spacing: 0.01em; }
+  .kpi .v small { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-left: 1px; }
+  .kpi .l { font-size: 10px; color: var(--ink-2); margin-top: 3px; }
 
-  /* ---- ツールバー ---- */
+  .substrip {
+    display: flex; gap: 8px; margin-top: 6px;
+    background: var(--panel-2);
+    padding: 7px 10px;
+    font-size: 11px; color: var(--ink-2);
+  }
+  .substrip b { color: var(--ink); font-weight: 700; }
+  .substrip span + span { margin-left: auto; }
+
+  /* ---------------- ツールバー ---------------- */
   .toolbar {
     position: sticky; top: 0; z-index: 5;
-    background: var(--page);
-    padding: 10px 16px 8px;
-    border-bottom: 1px solid var(--hairline);
+    background: var(--bg);
+    padding: 10px 14px 9px;
+    border-bottom: 1px solid var(--line);
   }
   .search {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid var(--hairline);
-    border-radius: 10px;
-    background: var(--surface);
+    border: 1px solid var(--line-2);
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 14px;
   }
   .search::placeholder { color: var(--muted); }
+  .search:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+
   .chips {
-    display: flex; gap: 8px; margin-top: 8px;
+    display: flex; gap: 6px; margin-top: 8px;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none; padding-bottom: 2px;
   }
@@ -125,164 +157,328 @@
   .chip {
     flex: none;
     padding: 6px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--hairline);
-    background: var(--surface);
+    border: 1px solid var(--line-2);
+    background: transparent;
     color: var(--ink-2);
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
+    letter-spacing: 0.02em;
   }
   .chip[aria-pressed="true"] {
-    background: var(--ink);
-    border-color: var(--ink);
-    color: var(--page);
-    font-weight: 600;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-in);
+    font-weight: 800;
   }
 
-  /* ---- 機械一覧 ---- */
-  main { padding: 12px 16px; display: grid; gap: 10px; }
-  .count-line { font-size: 12px; color: var(--muted); }
+  /* ---------------- 一覧 ---------------- */
+  main { padding: 12px 14px; display: grid; gap: 9px; }
+  .count-line { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+
   .card {
     width: 100%;
     text-align: left;
-    background: var(--surface);
-    border: 1px solid var(--hairline);
-    border-radius: 14px;
-    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--st, var(--st-idle));
+    padding: 11px 12px 12px;
     cursor: pointer;
     display: grid;
-    gap: 8px;
+    gap: 9px;
   }
-  .card:active { transform: scale(0.99); }
-  .card .row1 { display: flex; align-items: center; gap: 8px; }
-  .card .no { font-size: 17px; font-weight: 700; }
-  .card .model { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .status {
-    margin-left: auto;
-    flex: none;
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 999px;
-  }
-  .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-  .st-running { color: var(--st-running); background: var(--st-running-bg); }
-  .st-changeover { color: var(--st-changeover); background: var(--st-changeover-bg); }
-  .st-stopped { color: var(--st-stopped); background: var(--st-stopped-bg); }
-  .st-idle { color: var(--st-idle); background: var(--st-idle-bg); }
+  .card:active { background: var(--panel-2); }
 
-  .card .row2 { display: flex; align-items: baseline; gap: 12px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
-  .card .sku { font-weight: 600; color: var(--ink); }
+  .card .row1 { display: flex; align-items: center; gap: 8px; }
+  .card .no {
+    font-size: 18px; font-weight: 800; letter-spacing: 0.02em;
+  }
+  .card .no i { font-style: normal; font-size: 11px; color: var(--ink-2); font-weight: 700; margin-left: 2px; }
+  .card .model {
+    font-size: 11px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .status {
+    margin-left: auto; flex: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+    padding: 4px 9px;
+    color: var(--st);
+    background: color-mix(in srgb, var(--st) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--st) 40%, transparent);
+  }
+  .status::before { content: ""; width: 6px; height: 6px; background: currentColor; }
+
+  .card .row2 {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    font-size: 12px; color: var(--ink-2);
+  }
+  .card .sku {
+    font-weight: 800; color: var(--ink); font-size: 13px; letter-spacing: 0.03em;
+  }
+  .card .rolls { color: var(--accent); font-weight: 700; }
   .card .due { margin-left: auto; }
-  .due.soon { color: var(--st-changeover); font-weight: 600; }
-  .due.overdue { color: var(--st-stopped); font-weight: 600; }
+  .due.soon    { color: var(--st-changeover); font-weight: 700; }
+  .due.overdue { color: var(--st-stopped); font-weight: 700; }
 
   .meter { display: flex; align-items: center; gap: 8px; }
-  .meter .bar { flex: 1; height: 4px; border-radius: 2px; background: var(--grid); overflow: hidden; }
-  .meter .bar i { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
-  .meter .pct { font-size: 12px; color: var(--ink-2); min-width: 3.5em; text-align: right; font-variant-numeric: tabular-nums; }
+  .meter .lab { font-size: 10px; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; width: 34px; flex: none; }
+  .meter .bar { flex: 1; height: 5px; background: var(--panel-3); overflow: hidden; }
+  .meter .bar i { display: block; height: 100%; background: var(--accent); }
+  .meter .bar.prod i { background: var(--yarn-f); }
+  .meter .pct { font-size: 11px; color: var(--ink-2); min-width: 4.4em; text-align: right; font-weight: 700; }
 
-  .card .note { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .yarns { display: flex; gap: 6px; }
+  .yarn-chip {
+    flex: 1;
+    background: var(--panel-2);
+    padding: 6px 7px;
+    border-top: 2px solid var(--yc);
+    min-width: 0;
+  }
+  .yarn-chip .k { font-size: 9px; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; }
+  .yarn-chip .v { font-size: 13px; font-weight: 800; margin-top: 1px; }
+  .yarn-chip .v small { font-size: 9px; color: var(--ink-2); font-weight: 700; margin-left: 1px; }
+
+  .card .note {
+    font-size: 11px; color: var(--muted);
+    border-left: 2px solid var(--line-2); padding-left: 7px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 
   .empty {
     text-align: center; color: var(--muted);
-    padding: 48px 16px; font-size: 14px; line-height: 1.8;
+    padding: 44px 16px; font-size: 13px; line-height: 1.9;
   }
   .empty button {
-    display: block; margin: 12px auto 0;
-    padding: 10px 18px; border-radius: 10px;
-    border: 1px solid var(--hairline); background: var(--surface); cursor: pointer;
+    display: block; margin: 14px auto 0;
+    padding: 11px 20px;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent);
+    font-weight: 700; cursor: pointer; letter-spacing: 0.04em;
   }
 
-  /* ---- フローティングボタン ---- */
+  /* ---------------- FAB ---------------- */
   .fabs {
-    position: fixed;
-    right: 16px;
+    position: fixed; right: 14px;
     bottom: calc(16px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+    display: flex; flex-direction: column; gap: 9px; align-items: flex-end;
     z-index: 6;
   }
-  .fab {
-    border: none; cursor: pointer;
-    border-radius: 999px;
-    box-shadow: var(--shadow);
-    font-weight: 600;
-  }
+  .fab { border: none; cursor: pointer; font-weight: 800; box-shadow: var(--shadow); }
   .fab-add {
-    width: 56px; height: 56px; font-size: 28px; line-height: 1;
-    background: var(--ink); color: var(--page);
+    width: 54px; height: 54px; font-size: 26px; line-height: 1;
+    background: var(--accent); color: var(--accent-in);
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
   }
   .fab-bulk {
-    padding: 8px 14px; font-size: 12px;
-    background: var(--surface); color: var(--ink-2);
-    border: 1px solid var(--hairline);
+    padding: 8px 13px; font-size: 11px; letter-spacing: 0.08em;
+    background: var(--panel-3); color: var(--ink);
+    border: 1px solid var(--line-2);
   }
 
-  /* ---- シート（編集 / 一括登録） ---- */
+  /* ---------------- シート ---------------- */
   .overlay {
     position: fixed; inset: 0; z-index: 10;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.72);
     display: none;
   }
   .overlay.open { display: block; }
   .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
-    background: var(--surface);
-    border-radius: 16px 16px 0 0;
-    padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
-    max-height: 88vh; overflow-y: auto;
+    background: var(--bg);
+    border-top: 2px solid var(--accent);
+    padding: 0 0 calc(18px + env(safe-area-inset-bottom));
+    max-height: 92vh; overflow-y: auto;
     transform: translateY(105%);
-    transition: transform 0.2s ease;
+    transition: transform 0.22s ease;
   }
   .sheet.open { transform: translateY(0); }
-  .sheet h2 { font-size: 16px; margin-bottom: 12px; }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
+  .sheet-head {
+    position: sticky; top: 0; z-index: 2;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 13px 14px 11px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sheet-head h2 { font-size: 15px; font-weight: 800; letter-spacing: 0.03em; }
+  .sheet-body { padding: 14px; }
+
+  .sec { margin-bottom: 18px; }
+  .sec-h {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sec-h .bar { width: 3px; height: 13px; background: var(--accent); flex: none; }
+  .sec-h h3 { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; }
+  .sec-h .en { margin-left: auto; }
+
+  .field { margin-bottom: 11px; }
+  .field label { display: block; font-size: 11px; color: var(--ink-2); margin-bottom: 5px; font-weight: 600; }
   .field input, .field select, .field textarea {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--hairline);
-    border-radius: 10px;
-    background: var(--page);
+    padding: 10px 11px;
+    border: 1px solid var(--line-2);
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 14px;
   }
-  .field textarea { resize: vertical; min-height: 64px; }
-  .field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .sheet .actions { display: grid; gap: 10px; margin-top: 16px; }
-  .btn {
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid var(--hairline);
-    background: var(--surface);
-    cursor: pointer;
-    font-weight: 600;
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: 2px solid var(--accent); outline-offset: -2px;
   }
-  .btn-primary { background: var(--ink); color: var(--page); border-color: var(--ink); }
-  .btn-danger { color: var(--danger); }
+  .field select {
+    background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
+                      linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+    background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 32px;
+  }
+  .field textarea { resize: vertical; min-height: 62px; }
+  .field .hint { font-size: 10px; color: var(--muted); margin-top: 5px; line-height: 1.6; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
 
-  /* ---- トースト ---- */
+  .yarn-label { display: flex; align-items: center; gap: 5px; }
+  .yarn-label::before { content: ""; width: 8px; height: 8px; background: var(--yc); flex: none; }
+
+  /* 計算結果パネル */
+  .calc {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 12px;
+  }
+  .calc-row { display: flex; align-items: baseline; gap: 8px; font-size: 12px; }
+  .calc-row + .calc-row { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--line); }
+  .calc-row .k { color: var(--ink-2); }
+  .calc-row .v { margin-left: auto; font-weight: 800; font-size: 14px; }
+  .calc-table { margin-top: 11px; }
+  .calc-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .calc-table th, .calc-table td {
+    padding: 7px 6px; text-align: right; border-bottom: 1px solid var(--line);
+  }
+  .calc-table th { color: var(--muted); font-size: 10px; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; }
+  .calc-table td:first-child, .calc-table th:first-child { text-align: left; }
+  .calc-table tbody td { font-weight: 700; }
+  .calc-table .yname { display: flex; align-items: center; gap: 6px; font-weight: 800; }
+  .calc-table .yname::before { content: ""; width: 8px; height: 8px; background: var(--yc); flex: none; }
+  .calc-table tr:last-child td { border-bottom: none; }
+  .short { color: var(--danger); }
+  .over  { color: var(--good); }
+  .formula {
+    margin-top: 10px; font-size: 10px; color: var(--muted); line-height: 1.7;
+    background: var(--panel-2); padding: 8px 9px;
+  }
+
+  /* 水揚げスライダー */
+  .lift-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 9px; }
+  .lift-head .big { font-size: 24px; font-weight: 800; }
+  .lift-head .big small { font-size: 12px; color: var(--ink-2); font-weight: 700; }
+  .lift-head .rest { margin-left: auto; font-size: 12px; color: var(--ink-2); }
+  .lift-head .rest b { color: var(--accent); font-size: 15px; font-weight: 800; }
+
+  input[type="range"] {
+    width: 100%; background: transparent; margin: 6px 0 2px;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 8px; background: var(--panel-3);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; margin-top: -7px;
+    background: var(--accent);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-track { height: 8px; background: var(--panel-3); }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px; border: none; background: var(--accent);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); cursor: pointer;
+  }
+  .range-ends { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-weight: 700; }
+
+  .quick {
+    display: flex; gap: 8px; align-items: flex-end; margin-top: 13px;
+    padding-top: 13px; border-top: 1px solid var(--line);
+  }
+  .quick .field { flex: 1; margin-bottom: 0; }
+  .quick button {
+    flex: none; padding: 10px 15px;
+    background: var(--accent); color: var(--accent-in);
+    border: none; font-weight: 800; cursor: pointer; letter-spacing: 0.04em;
+  }
+
+  .log { margin-top: 12px; }
+  .log-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 0; border-bottom: 1px solid var(--line);
+    font-size: 12px;
+  }
+  .log-item .d { color: var(--ink-2); font-weight: 600; }
+  .log-item .kg { margin-left: auto; font-weight: 800; }
+  .log-item button {
+    flex: none; width: 26px; height: 26px;
+    background: transparent; border: 1px solid var(--line-2);
+    color: var(--muted); cursor: pointer; font-size: 13px; line-height: 1;
+  }
+  .log-empty { font-size: 11px; color: var(--muted); padding: 9px 0; }
+
+  /* ボタン */
+  .actions { display: grid; gap: 8px; margin-top: 18px; }
+  .btn {
+    padding: 13px;
+    border: 1px solid var(--line-2);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .btn-primary {
+    background: var(--accent); color: var(--accent-in); border-color: var(--accent);
+    font-weight: 800;
+  }
+  .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+
+  /* トースト */
   .toast {
-    position: fixed; left: 16px; right: 16px;
-    bottom: calc(90px + env(safe-area-inset-bottom));
+    position: fixed; left: 14px; right: 14px;
+    bottom: calc(88px + env(safe-area-inset-bottom));
     z-index: 20;
-    background: var(--ink); color: var(--page);
-    padding: 12px 14px; border-radius: 12px;
-    font-size: 13px; box-shadow: var(--shadow);
+    background: var(--accent); color: var(--accent-in);
+    padding: 12px 14px;
+    font-size: 13px; font-weight: 700;
+    box-shadow: var(--shadow);
     opacity: 0; pointer-events: none;
     transition: opacity 0.2s ease;
+    border-left: 4px solid var(--accent-in);
   }
   .toast.show { opacity: 1; }
   .toast.error { background: var(--danger); color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheet, .toast { transition: none; }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>工場稼働管理</h1>
+  <div class="brand">
+    <span class="mark" aria-hidden="true"></span>
+    <h1>工場稼働管理</h1>
+    <span class="sub">
+      <span class="eyebrow">Operation Status</span>
+    </span>
+  </div>
   <div class="kpis">
-    <div class="kpi"><div class="v" id="kpiUptime">–</div><div class="l">平均稼働率</div></div>
-    <div class="kpi"><div class="v" id="kpiRunning">–</div><div class="l">稼働中 / 全台数</div></div>
-    <div class="kpi"><div class="v" id="kpiChange">–</div><div class="l">今週の段取り</div></div>
+    <div class="kpi"><div class="v num" id="kpiUptime">–</div><div class="l">平均稼働率</div></div>
+    <div class="kpi"><div class="v num" id="kpiRunning">–</div><div class="l">稼働中 / 全台数</div></div>
+    <div class="kpi"><div class="v num" id="kpiChange">–</div><div class="l">今週の段取り</div></div>
+  </div>
+  <div class="substrip">
+    <span>本日の水揚げ <b class="num" id="kpiToday">0.0</b> kg</span>
+    <span>残り生産量 <b class="num" id="kpiRemain">0.0</b> kg</span>
   </div>
 </header>
 
@@ -298,74 +494,195 @@
   <button class="fab fab-add" id="fabAdd" type="button" aria-label="機械を追加">＋</button>
 </div>
 
-<!-- 編集シート -->
+<!-- ============ 編集シート ============ -->
 <div class="overlay" id="editOverlay"></div>
 <form class="sheet" id="editSheet">
-  <h2 id="editTitle">機械を追加</h2>
-  <div class="grid2">
-    <div class="field">
-      <label for="fNo">号機番号 *</label>
-      <input id="fNo" required placeholder="例: 01">
+  <div class="sheet-head">
+    <span class="brand-mark" style="width:10px;height:14px;background:var(--accent);flex:none;"></span>
+    <h2 id="editTitle">機械を追加</h2>
+    <span class="eyebrow" style="margin-left:auto;">Unit Config</span>
+  </div>
+
+  <div class="sheet-body">
+
+    <!-- 基本情報 -->
+    <div class="sec">
+      <div class="sec-h"><span class="bar"></span><h3>基本情報</h3><span class="eyebrow en">Basic</span></div>
+      <div class="grid2">
+        <div class="field">
+          <label for="fNo">号機番号 *</label>
+          <input id="fNo" required placeholder="例: 01">
+        </div>
+        <div class="field">
+          <label for="fModel">機種</label>
+          <input id="fModel" placeholder="例: 福原 V-LEC4">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fStatus">状態</label>
+        <select id="fStatus">
+          <option value="running">稼働中</option>
+          <option value="changeover">段取り中</option>
+          <option value="stopped">停止</option>
+          <option value="idle" selected>計画停止</option>
+        </select>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="fUptime">稼働率（%）</label>
+          <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
+        </div>
+        <div class="field">
+          <label for="fNext">次回段取り予定日</label>
+          <input id="fNext" type="date">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fNote">メモ</label>
+        <textarea id="fNote" placeholder="トラブル内容・引き継ぎ事項など"></textarea>
+      </div>
     </div>
-    <div class="field">
-      <label for="fModel">機種</label>
-      <input id="fModel" placeholder="例: 福原 V-LEC4">
+
+    <!-- 生産オーダー -->
+    <div class="sec">
+      <div class="sec-h"><span class="bar"></span><h3>生産オーダー</h3><span class="eyebrow en">Order</span></div>
+      <div class="grid3">
+        <div class="field">
+          <label for="fSku">品番</label>
+          <input id="fSku" placeholder="AB-1234">
+        </div>
+        <div class="field">
+          <label for="fRolls">反数</label>
+          <input id="fRolls" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="fTotalKg">合計生産量(kg)</label>
+          <input id="fTotalKg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+        </div>
+      </div>
     </div>
-  </div>
-  <div class="field">
-    <label for="fStatus">状態</label>
-    <select id="fStatus">
-      <option value="running">稼働中</option>
-      <option value="changeover">段取り中</option>
-      <option value="stopped">停止</option>
-      <option value="idle" selected>計画停止</option>
-    </select>
-  </div>
-  <div class="grid2">
-    <div class="field">
-      <label for="fSku">現在品番</label>
-      <input id="fSku" placeholder="例: AB-1234">
+
+    <!-- 交編率 -->
+    <div class="sec">
+      <div class="sec-h"><span class="bar"></span><h3>交編率</h3><span class="eyebrow en">Blend Ratio</span></div>
+      <div class="grid3">
+        <div class="field">
+          <label for="fRatioF" class="yarn-label" style="--yc:var(--yarn-f)">表糸 %</label>
+          <input id="fRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="fRatioM" class="yarn-label" style="--yc:var(--yarn-m)">中糸 %</label>
+          <input id="fRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="fRatioB" class="yarn-label" style="--yc:var(--yarn-b)">裏糸 %</label>
+          <input id="fRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label for="fLoss">ロス率（%）</label>
+        <input id="fLoss" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="3">
+        <p class="hint" id="ratioHint"></p>
+      </div>
     </div>
-    <div class="field">
-      <label for="fUptime">稼働率（%）</label>
-      <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
+
+    <!-- 発注糸量 -->
+    <div class="sec">
+      <div class="sec-h"><span class="bar"></span><h3>発注糸量</h3><span class="eyebrow en">Ordered</span></div>
+      <div class="grid3">
+        <div class="field">
+          <label for="fOrdF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
+          <input id="fOrdF" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="fOrdM" class="yarn-label" style="--yc:var(--yarn-m)">中 kg</label>
+          <input id="fOrdM" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="fOrdB" class="yarn-label" style="--yc:var(--yarn-b)">裏 kg</label>
+          <input id="fOrdB" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+        </div>
+      </div>
+      <p class="hint">生産開始時に手配した糸量。必要量との差分が下に表示されます。</p>
     </div>
-  </div>
-  <div class="field">
-    <label for="fNext">次回段取り予定日</label>
-    <input id="fNext" type="date">
-  </div>
-  <div class="field">
-    <label for="fNote">メモ</label>
-    <textarea id="fNote" placeholder="トラブル内容・引き継ぎ事項など"></textarea>
-  </div>
-  <div class="actions">
-    <button class="btn btn-primary" type="submit">保存</button>
-    <button class="btn" type="button" id="btnCancel">キャンセル</button>
-    <button class="btn btn-danger" type="button" id="btnDelete" hidden>この機械を削除</button>
+
+    <!-- 水揚げ -->
+    <div class="sec" id="liftSec">
+      <div class="sec-h"><span class="bar"></span><h3>水揚げ記録</h3><span class="eyebrow en">Daily Output</span></div>
+      <div class="calc">
+        <div class="lift-head">
+          <span class="big num" id="liftValue">0.0<small> kg</small></span>
+          <span class="rest">残り <b class="num" id="liftRest">0.0</b> kg</span>
+        </div>
+        <input type="range" id="fProduced" min="0" max="100" step="0.1" value="0">
+        <div class="range-ends"><span>0</span><span class="num" id="liftMax">0</span></div>
+
+        <div class="quick">
+          <div class="field">
+            <label for="qKg">今朝の水揚げ(kg)</label>
+            <input id="qKg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
+          <button type="button" id="qAdd">記録</button>
+        </div>
+
+        <div class="log" id="liftLog"></div>
+      </div>
+    </div>
+
+    <!-- 原糸必要量 -->
+    <div class="sec">
+      <div class="sec-h"><span class="bar"></span><h3>原糸必要量</h3><span class="eyebrow en">Yarn Required</span></div>
+      <div class="calc">
+        <div class="calc-row">
+          <span class="k">残り生産量（編残）</span>
+          <span class="v num" id="cRemain">0.0 kg</span>
+        </div>
+        <div class="calc-table">
+          <table>
+            <thead>
+              <tr><th>糸</th><th>全体必要</th><th>残り必要</th><th>発注差分</th></tr>
+            </thead>
+            <tbody id="cBody"></tbody>
+          </table>
+        </div>
+        <p class="formula" id="cFormula"></p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">保存</button>
+      <button class="btn" type="button" id="btnCancel">キャンセル</button>
+      <button class="btn btn-danger" type="button" id="btnDelete" hidden>この機械を削除</button>
+    </div>
   </div>
 </form>
 
-<!-- 一括登録シート -->
+<!-- ============ 一括登録シート ============ -->
 <div class="overlay" id="bulkOverlay"></div>
 <form class="sheet" id="bulkSheet">
-  <h2>一括登録</h2>
-  <div class="grid2">
-    <div class="field">
-      <label for="bCount">台数 *</label>
-      <input id="bCount" type="number" inputmode="numeric" min="1" max="200" step="1" required placeholder="例: 50">
-    </div>
-    <div class="field">
-      <label for="bPrefix">号機の接頭辞</label>
-      <input id="bPrefix" placeholder="例: K-（空欄可）">
-    </div>
+  <div class="sheet-head">
+    <span style="width:10px;height:14px;background:var(--accent);flex:none;"></span>
+    <h2>一括登録</h2>
+    <span class="eyebrow" style="margin-left:auto;">Batch</span>
   </div>
-  <p class="hint" style="font-size:12px;color:var(--muted);margin-bottom:4px;">
-    号機は「接頭辞＋連番（01, 02, …）」で採番し、既存の号機がある場合は続きの番号から作成します。初期状態は「計画停止」です。
-  </p>
-  <div class="actions">
-    <button class="btn btn-primary" type="submit">作成する</button>
-    <button class="btn" type="button" id="btnBulkCancel">キャンセル</button>
+  <div class="sheet-body">
+    <div class="grid2">
+      <div class="field">
+        <label for="bCount">台数 *</label>
+        <input id="bCount" type="number" inputmode="numeric" min="1" max="200" step="1" required placeholder="例: 50">
+      </div>
+      <div class="field">
+        <label for="bPrefix">号機の接頭辞</label>
+        <input id="bPrefix" placeholder="例: K-（空欄可）">
+      </div>
+    </div>
+    <p class="hint" style="font-size:11px;color:var(--muted);line-height:1.7;">
+      号機は「接頭辞＋連番（01, 02, …）」で採番し、既存の号機がある場合は続きの番号から作成します。初期状態は「計画停止」です。
+    </p>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">作成する</button>
+      <button class="btn" type="button" id="btnBulkCancel">キャンセル</button>
+    </div>
   </div>
 </form>
 
@@ -374,44 +691,35 @@
 <script>
 "use strict";
 
-// ---- 定数・状態 ----
+/* ============================================================
+   定数
+   ============================================================ */
 const STORAGE_KEY = "factory-machines-v1";
+
 const STATUS = {
-  running:    { label: "稼働中",   cls: "st-running" },
-  changeover: { label: "段取り中", cls: "st-changeover" },
-  stopped:    { label: "停止",     cls: "st-stopped" },
-  idle:       { label: "計画停止", cls: "st-idle" },
+  running:    { label: "稼働中",   color: "var(--st-running)" },
+  changeover: { label: "段取り中", color: "var(--st-changeover)" },
+  stopped:    { label: "停止",     color: "var(--st-stopped)" },
+  idle:       { label: "計画停止", color: "var(--st-idle)" },
 };
+
+// 表・中・裏の糸。key はデータ上のフィールド名
+const YARNS = [
+  { key: "f", label: "表", color: "var(--yarn-f)" },
+  { key: "m", label: "中", color: "var(--yarn-m)" },
+  { key: "b", label: "裏", color: "var(--yarn-b)" },
+];
+
+const DEFAULT_LOSS = 3;
 
 let machines = [];
 let filterStatus = "all";
 let query = "";
 let editingId = null; // null = 新規追加
 
-// ---- 永続化 ----
-function loadMachines() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const data = JSON.parse(raw);
-    return Array.isArray(data) ? data : [];
-  } catch (e) {
-    showToast("保存データの読み込みに失敗しました", true);
-    return [];
-  }
-}
-
-function saveMachines() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
-    return true;
-  } catch (e) {
-    showToast("保存に失敗しました。空き容量やブラウザ設定を確認してください", true);
-    return false;
-  }
-}
-
-// ---- ユーティリティ ----
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
 function uid() {
   return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
@@ -422,7 +730,22 @@ function escapeHtml(s) {
   })[c]);
 }
 
-// 号機番号の自然順ソート（"2" < "10"、接頭辞は文字列比較）
+function num(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function fmt(n, digits = 1) {
+  return num(n).toFixed(digits);
+}
+
+function todayStr() {
+  const d = new Date();
+  const p = x => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// 号機番号の自然順ソート（"2" < "10"）
 function compareNo(a, b) {
   return String(a.no).localeCompare(String(b.no), "ja", { numeric: true });
 }
@@ -446,17 +769,106 @@ function dueText(days) {
   return `段取り あと${days}日`;
 }
 
-// ---- サマリー ----
+/* ============================================================
+   永続化（旧スキーマのデータも読めるように正規化する）
+   ============================================================ */
+function normalize(m) {
+  const r = m.ratio || {};
+  const o = m.ordered || {};
+  return {
+    id: m.id || uid(),
+    no: String(m.no ?? ""),
+    model: m.model || "",
+    status: STATUS[m.status] ? m.status : "idle",
+    sku: m.sku || "",
+    uptime: Math.max(0, Math.min(100, Math.round(num(m.uptime)))),
+    nextChange: m.nextChange || "",
+    note: m.note || "",
+    rolls: Math.max(0, Math.round(num(m.rolls))),
+    totalKg: Math.max(0, num(m.totalKg)),
+    producedKg: Math.max(0, num(m.producedKg)),
+    lossPct: m.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(m.lossPct)),
+    ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
+    ordered: { f: Math.max(0, num(o.f)), m: Math.max(0, num(o.m)), b: Math.max(0, num(o.b)) },
+    log: Array.isArray(m.log)
+      ? m.log.filter(e => e && e.d).map(e => ({ d: String(e.d), kg: num(e.kg) }))
+      : [],
+  };
+}
+
+function loadMachines() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data.map(normalize) : [];
+  } catch (e) {
+    showToast("保存データの読み込みに失敗しました", true);
+    return [];
+  }
+}
+
+function saveMachines() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
+    return true;
+  } catch (e) {
+    showToast("保存に失敗しました。ブラウザの設定や空き容量を確認してください", true);
+    return false;
+  }
+}
+
+/* ============================================================
+   計算
+   原糸必要量 = 対象生産量(kg) × 交編率(%) × (1 + ロス率(%))
+   「残り必要量」は編残（合計生産量 − 水揚げ累計）を基準にする
+   ============================================================ */
+function calc(m) {
+  const total = Math.max(0, num(m.totalKg));
+  const produced = Math.max(0, Math.min(total, num(m.producedKg)));
+  const remaining = Math.max(0, total - produced);
+  const lossFactor = 1 + num(m.lossPct) / 100;
+
+  const need = {};
+  for (const y of YARNS) {
+    const ratio = num(m.ratio[y.key]) / 100;
+    const all = total * ratio * lossFactor;
+    const rest = remaining * ratio * lossFactor;
+    need[y.key] = {
+      all,
+      rest,
+      diff: num(m.ordered[y.key]) - all, // 発注 − 全体必要（＋なら余剰、−なら不足）
+    };
+  }
+
+  return {
+    total,
+    produced,
+    remaining,
+    progress: total > 0 ? (produced / total) * 100 : 0,
+    need,
+    ratioSum: YARNS.reduce((s, y) => s + num(m.ratio[y.key]), 0),
+  };
+}
+
+/* ============================================================
+   サマリー
+   ============================================================ */
 function renderSummary() {
   const total = machines.length;
   const running = machines.filter(m => m.status === "running").length;
   const avg = total
-    ? Math.round(machines.reduce((s, m) => s + (Number(m.uptime) || 0), 0) / total)
+    ? Math.round(machines.reduce((s, m) => s + num(m.uptime), 0) / total)
     : null;
   const weekly = machines.filter(m => {
     const d = daysUntil(m.nextChange);
     return d !== null && d >= 0 && d <= 7;
   }).length;
+
+  const today = todayStr();
+  const todayKg = machines.reduce((s, m) =>
+    s + m.log.filter(e => e.d === today).reduce((t, e) => t + num(e.kg), 0), 0);
+  const remainKg = machines.reduce((s, m) => s + calc(m).remaining, 0);
 
   document.getElementById("kpiUptime").innerHTML =
     avg === null ? "–" : `${avg}<small>%</small>`;
@@ -464,9 +876,13 @@ function renderSummary() {
     `${running}<small> / ${total}</small>`;
   document.getElementById("kpiChange").innerHTML =
     `${weekly}<small>件</small>`;
+  document.getElementById("kpiToday").textContent = fmt(todayKg);
+  document.getElementById("kpiRemain").textContent = fmt(remainKg);
 }
 
-// ---- 一覧 ----
+/* ============================================================
+   一覧
+   ============================================================ */
 function filteredMachines() {
   const q = query.trim().toLowerCase();
   return machines
@@ -477,6 +893,49 @@ function filteredMachines() {
         String(v ?? "").toLowerCase().includes(q));
     })
     .sort(compareNo);
+}
+
+function cardHtml(m) {
+  const st = STATUS[m.status] || STATUS.idle;
+  const days = daysUntil(m.nextChange);
+  const dueCls = days === null ? "" : days < 0 ? "overdue" : days <= 7 ? "soon" : "";
+  const c = calc(m);
+  const uptime = Math.max(0, Math.min(100, num(m.uptime)));
+
+  const yarnBlock = c.total > 0 ? `
+    <span class="meter">
+      <span class="lab">水揚</span>
+      <span class="bar prod"><i style="width:${Math.min(100, c.progress)}%"></i></span>
+      <span class="pct num">${fmt(c.produced, 0)}/${fmt(c.total, 0)}kg</span>
+    </span>
+    <span class="yarns">
+      ${YARNS.map(y => `
+        <span class="yarn-chip" style="--yc:${y.color}">
+          <span class="k">${y.label}糸 残</span>
+          <span class="v num">${fmt(c.need[y.key].rest)}<small>kg</small></span>
+        </span>`).join("")}
+    </span>` : "";
+
+  return `
+    <button class="card notch" type="button" data-id="${escapeHtml(m.id)}" style="--st:${st.color}">
+      <span class="row1">
+        <span class="no">${escapeHtml(m.no)}<i>号機</i></span>
+        <span class="model">${escapeHtml(m.model)}</span>
+        <span class="status">${st.label}</span>
+      </span>
+      <span class="row2">
+        <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+        ${m.rolls > 0 ? `<span class="rolls num">${m.rolls}反</span>` : ""}
+        ${days !== null ? `<span class="due ${dueCls}">${dueText(days)}</span>` : ""}
+      </span>
+      <span class="meter">
+        <span class="lab">稼働</span>
+        <span class="bar"><i style="width:${uptime}%"></i></span>
+        <span class="pct num">${uptime}%</span>
+      </span>
+      ${yarnBlock}
+      ${m.note ? `<span class="note">${escapeHtml(m.note)}</span>` : ""}
+    </button>`;
 }
 
 function renderList() {
@@ -499,39 +958,15 @@ function renderList() {
     return;
   }
 
-  const html = items.map(m => {
-    const st = STATUS[m.status] || STATUS.idle;
-    const days = daysUntil(m.nextChange);
-    const dueCls = days === null ? "" : days < 0 ? "overdue" : days <= 7 ? "soon" : "";
-    const uptime = Math.max(0, Math.min(100, Number(m.uptime) || 0));
-    return `
-      <button class="card" type="button" data-id="${escapeHtml(m.id)}">
-        <span class="row1">
-          <span class="no">${escapeHtml(m.no)}号機</span>
-          <span class="model">${escapeHtml(m.model)}</span>
-          <span class="status ${st.cls}">${st.label}</span>
-        </span>
-        <span class="row2">
-          <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
-          ${days !== null ? `<span class="due ${dueCls}">${dueText(days)}</span>` : ""}
-        </span>
-        <span class="meter">
-          <span class="bar"><i style="width:${uptime}%"></i></span>
-          <span class="pct">${uptime}%</span>
-        </span>
-        ${m.note ? `<span class="note">${escapeHtml(m.note)}</span>` : ""}
-      </button>`;
-  }).join("");
-
   list.innerHTML =
-    `<div class="count-line">${items.length}台を表示中（全${machines.length}台）</div>` + html;
+    `<div class="count-line">${items.length} / ${machines.length} units</div>`
+    + items.map(cardHtml).join("");
 
   list.querySelectorAll(".card").forEach(card => {
     card.addEventListener("click", () => openEditSheet(card.dataset.id));
   });
 }
 
-// ---- フィルターチップ ----
 function renderChips() {
   const defs = [["all", "すべて"]].concat(
     Object.entries(STATUS).map(([k, v]) => [k, v.label]));
@@ -539,7 +974,7 @@ function renderChips() {
   chips.innerHTML = defs.map(([k, label]) => {
     const n = k === "all" ? machines.length : machines.filter(m => m.status === k).length;
     return `<button class="chip" type="button" data-status="${k}"
-      aria-pressed="${filterStatus === k}">${label}（${n}）</button>`;
+      aria-pressed="${filterStatus === k}">${label} ${n}</button>`;
   }).join("");
   chips.querySelectorAll(".chip").forEach(chip => {
     chip.addEventListener("click", () => {
@@ -556,26 +991,143 @@ function renderAll() {
   renderList();
 }
 
-// ---- 編集シート ----
+/* ============================================================
+   編集シート
+   ============================================================ */
 const editOverlay = document.getElementById("editOverlay");
 const editSheet = document.getElementById("editSheet");
+const $ = id => document.getElementById(id);
+
+// フォームの現在値から仮の機械オブジェクトを作る（プレビュー計算用）
+function formToMachine() {
+  return normalize({
+    id: editingId || "preview",
+    no: $("fNo").value.trim(),
+    model: $("fModel").value.trim(),
+    status: $("fStatus").value,
+    sku: $("fSku").value.trim(),
+    uptime: $("fUptime").value === "" ? 0 : $("fUptime").value,
+    nextChange: $("fNext").value,
+    note: $("fNote").value.trim(),
+    rolls: $("fRolls").value,
+    totalKg: $("fTotalKg").value,
+    producedKg: $("fProduced").value,
+    lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
+    ratio: { f: $("fRatioF").value, m: $("fRatioM").value, b: $("fRatioB").value },
+    ordered: { f: $("fOrdF").value, m: $("fOrdM").value, b: $("fOrdB").value },
+    log: editingId ? (machines.find(x => x.id === editingId)?.log || []) : [],
+  });
+}
+
+function fillForm(m) {
+  $("fNo").value = m.no;
+  $("fModel").value = m.model;
+  $("fStatus").value = m.status;
+  $("fSku").value = m.sku;
+  $("fUptime").value = m.uptime || "";
+  $("fNext").value = m.nextChange;
+  $("fNote").value = m.note;
+  $("fRolls").value = m.rolls || "";
+  $("fTotalKg").value = m.totalKg || "";
+  $("fLoss").value = m.lossPct;
+  $("fRatioF").value = m.ratio.f || "";
+  $("fRatioM").value = m.ratio.m || "";
+  $("fRatioB").value = m.ratio.b || "";
+  $("fOrdF").value = m.ordered.f || "";
+  $("fOrdM").value = m.ordered.m || "";
+  $("fOrdB").value = m.ordered.b || "";
+  syncSlider(m.totalKg, m.producedKg);
+}
+
+// スライダーの上限を合計生産量に合わせる
+function syncSlider(totalKg, producedKg) {
+  const slider = $("fProduced");
+  const max = Math.max(0, num(totalKg));
+  slider.max = max > 0 ? max : 100;
+  slider.disabled = max <= 0;
+  slider.value = Math.max(0, Math.min(max, num(producedKg)));
+  $("liftMax").textContent = fmt(max, 0);
+}
+
+function renderCalcPanel() {
+  const m = formToMachine();
+  const c = calc(m);
+
+  $("liftValue").innerHTML = `${fmt(c.produced)}<small> kg</small>`;
+  $("liftRest").textContent = fmt(c.remaining);
+  $("cRemain").textContent = `${fmt(c.remaining)} kg`;
+
+  $("cBody").innerHTML = YARNS.map(y => {
+    const n = c.need[y.key];
+    const hasOrder = num(m.ordered[y.key]) > 0;
+    const diffCls = n.diff < -0.05 ? "short" : n.diff > 0.05 ? "over" : "";
+    const diffTxt = hasOrder
+      ? `<span class="${diffCls}">${n.diff >= 0 ? "+" : ""}${fmt(n.diff)}</span>`
+      : "–";
+    return `
+      <tr>
+        <td><span class="yname" style="--yc:${y.color}">${y.label}糸</span></td>
+        <td class="num">${fmt(n.all)}</td>
+        <td class="num">${fmt(n.rest)}</td>
+        <td class="num">${diffTxt}</td>
+      </tr>`;
+  }).join("");
+
+  const sum = c.ratioSum;
+  const sumNote = sum > 0 && Math.abs(sum - 100) > 0.05
+    ? `　⚠ 交編率の合計が ${fmt(sum)}% です（通常は100%）`
+    : "";
+  $("ratioHint").textContent =
+    `原糸必要量 = 生産量(kg) × 交編率(%) × (1 + ロス率${fmt(num(m.lossPct), 0)}%)${sumNote}`;
+
+  $("cFormula").textContent =
+    `全体必要 = 合計生産量 ${fmt(c.total)}kg × 交編率 × ${fmt(1 + num(m.lossPct) / 100, 2)}／`
+    + `残り必要 = 編残 ${fmt(c.remaining)}kg × 交編率 × ${fmt(1 + num(m.lossPct) / 100, 2)}／`
+    + `発注差分 = 発注糸量 − 全体必要（マイナスは不足）`;
+}
+
+function renderLog() {
+  const box = $("liftLog");
+  const m = editingId ? machines.find(x => x.id === editingId) : null;
+  const log = m ? m.log : [];
+
+  if (!m) {
+    box.innerHTML = `<div class="log-empty">保存すると水揚げを記録できます。</div>`;
+    return;
+  }
+  if (log.length === 0) {
+    box.innerHTML = `<div class="log-empty">記録はまだありません。</div>`;
+    return;
+  }
+
+  box.innerHTML = log.slice(0, 8).map((e, i) => `
+    <div class="log-item">
+      <span class="d num">${escapeHtml(e.d)}</span>
+      <span class="kg num">${fmt(e.kg)} kg</span>
+      <button type="button" data-idx="${i}" aria-label="この記録を削除">×</button>
+    </div>`).join("");
+
+  box.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => removeLogEntry(Number(btn.dataset.idx)));
+  });
+}
 
 function openEditSheet(id) {
   editingId = id || null;
   const m = id ? machines.find(x => x.id === id) : null;
 
-  document.getElementById("editTitle").textContent = m ? `${m.no}号機を編集` : "機械を追加";
-  document.getElementById("fNo").value = m ? m.no : "";
-  document.getElementById("fModel").value = m ? m.model || "" : "";
-  document.getElementById("fStatus").value = m ? m.status : "idle";
-  document.getElementById("fSku").value = m ? m.sku || "" : "";
-  document.getElementById("fUptime").value = m && m.uptime != null ? m.uptime : "";
-  document.getElementById("fNext").value = m ? m.nextChange || "" : "";
-  document.getElementById("fNote").value = m ? m.note || "" : "";
-  document.getElementById("btnDelete").hidden = !m;
+  $("editTitle").textContent = m ? `${m.no}号機` : "機械を追加";
+  fillForm(m || normalize({ status: "idle", lossPct: DEFAULT_LOSS }));
+  $("btnDelete").hidden = !m;
+  $("qKg").value = "";
+  $("liftSec").style.opacity = m ? "1" : "0.55";
+
+  renderCalcPanel();
+  renderLog();
 
   editOverlay.classList.add("open");
   editSheet.classList.add("open");
+  editSheet.scrollTop = 0;
 }
 
 function closeEditSheet() {
@@ -584,30 +1136,76 @@ function closeEditSheet() {
   editingId = null;
 }
 
+// 入力のたびに計算パネルを更新する
+[
+  "fUptime", "fSku", "fRolls", "fTotalKg", "fLoss",
+  "fRatioF", "fRatioM", "fRatioB", "fOrdF", "fOrdM", "fOrdB",
+].forEach(id => $(id).addEventListener("input", () => {
+  if (id === "fTotalKg") syncSlider($("fTotalKg").value, $("fProduced").value);
+  renderCalcPanel();
+}));
+
+$("fProduced").addEventListener("input", renderCalcPanel);
+
+/* ---- 水揚げの記録（即時保存） ---- */
+$("qAdd").addEventListener("click", () => {
+  if (!editingId) { showToast("先に保存してください", true); return; }
+  const kg = num($("qKg").value);
+  if (!(kg > 0)) { showToast("水揚げ量を入力してください", true); return; }
+
+  const i = machines.findIndex(x => x.id === editingId);
+  if (i < 0) return;
+
+  const m = machines[i];
+  const total = num(m.totalKg);
+  m.producedKg = total > 0
+    ? Math.min(total, num(m.producedKg) + kg)
+    : num(m.producedKg) + kg;
+  m.log.unshift({ d: todayStr(), kg });
+
+  if (saveMachines()) {
+    $("qKg").value = "";
+    syncSlider(m.totalKg, m.producedKg);
+    renderCalcPanel();
+    renderLog();
+    renderAll();
+    showToast(`${fmt(kg)}kg を記録しました`);
+  }
+});
+
+function removeLogEntry(idx) {
+  const i = machines.findIndex(x => x.id === editingId);
+  if (i < 0) return;
+  const m = machines[i];
+  const entry = m.log[idx];
+  if (!entry) return;
+  if (!confirm(`${entry.d} の ${fmt(entry.kg)}kg の記録を削除しますか？`)) return;
+
+  m.log.splice(idx, 1);
+  m.producedKg = Math.max(0, num(m.producedKg) - num(entry.kg));
+
+  if (saveMachines()) {
+    syncSlider(m.totalKg, m.producedKg);
+    renderCalcPanel();
+    renderLog();
+    renderAll();
+    showToast("記録を削除しました");
+  }
+}
+
+/* ---- 保存 ---- */
 editSheet.addEventListener("submit", e => {
   e.preventDefault();
-  const no = document.getElementById("fNo").value.trim();
+  const no = $("fNo").value.trim();
   if (!no) return;
 
-  const uptimeRaw = document.getElementById("fUptime").value;
-  const uptime = uptimeRaw === "" ? 0
-    : Math.max(0, Math.min(100, Math.round(Number(uptimeRaw)) || 0));
-
-  const data = {
-    no,
-    model: document.getElementById("fModel").value.trim(),
-    status: document.getElementById("fStatus").value,
-    sku: document.getElementById("fSku").value.trim(),
-    uptime,
-    nextChange: document.getElementById("fNext").value,
-    note: document.getElementById("fNote").value.trim(),
-  };
+  const data = formToMachine();
 
   if (editingId) {
     const i = machines.findIndex(x => x.id === editingId);
-    if (i >= 0) machines[i] = { ...machines[i], ...data };
+    if (i >= 0) machines[i] = { ...data, id: editingId, log: machines[i].log };
   } else {
-    machines.push({ id: uid(), ...data });
+    machines.push({ ...data, id: uid() });
   }
 
   if (saveMachines()) {
@@ -617,7 +1215,7 @@ editSheet.addEventListener("submit", e => {
   }
 });
 
-document.getElementById("btnDelete").addEventListener("click", () => {
+$("btnDelete").addEventListener("click", () => {
   const m = machines.find(x => x.id === editingId);
   if (!m) return;
   if (!confirm(`${m.no}号機を削除します。よろしいですか？`)) return;
@@ -629,11 +1227,13 @@ document.getElementById("btnDelete").addEventListener("click", () => {
   }
 });
 
-document.getElementById("btnCancel").addEventListener("click", closeEditSheet);
+$("btnCancel").addEventListener("click", closeEditSheet);
 editOverlay.addEventListener("click", closeEditSheet);
-document.getElementById("fabAdd").addEventListener("click", () => openEditSheet(null));
+$("fabAdd").addEventListener("click", () => openEditSheet(null));
 
-// ---- 一括登録シート ----
+/* ============================================================
+   一括登録
+   ============================================================ */
 const bulkOverlay = document.getElementById("bulkOverlay");
 const bulkSheet = document.getElementById("bulkSheet");
 
@@ -648,8 +1248,8 @@ function closeBulkSheet() {
 
 bulkSheet.addEventListener("submit", e => {
   e.preventDefault();
-  const count = Math.round(Number(document.getElementById("bCount").value));
-  const prefix = document.getElementById("bPrefix").value.trim();
+  const count = Math.round(num($("bCount").value));
+  const prefix = $("bPrefix").value.trim();
   if (!count || count < 1) return;
 
   // 同じ接頭辞の既存号機から最大の連番を探し、続きから採番する
@@ -662,17 +1262,8 @@ bulkSheet.addEventListener("submit", e => {
   }
 
   for (let i = 1; i <= count; i++) {
-    const num = String(start + i).padStart(2, "0");
-    machines.push({
-      id: uid(),
-      no: prefix + num,
-      model: "",
-      status: "idle",
-      sku: "",
-      uptime: 0,
-      nextChange: "",
-      note: "",
-    });
+    const numStr = String(start + i).padStart(2, "0");
+    machines.push(normalize({ id: uid(), no: prefix + numStr, status: "idle" }));
   }
 
   if (saveMachines()) {
@@ -683,28 +1274,28 @@ bulkSheet.addEventListener("submit", e => {
   }
 });
 
-document.getElementById("btnBulkCancel").addEventListener("click", closeBulkSheet);
+$("btnBulkCancel").addEventListener("click", closeBulkSheet);
 bulkOverlay.addEventListener("click", closeBulkSheet);
-document.getElementById("fabBulk").addEventListener("click", openBulkSheet);
+$("fabBulk").addEventListener("click", openBulkSheet);
 
-// ---- 検索 ----
-document.getElementById("search").addEventListener("input", e => {
+/* ============================================================
+   検索 / トースト / 起動
+   ============================================================ */
+$("search").addEventListener("input", e => {
   query = e.target.value;
   renderList();
 });
 
-// ---- トースト ----
 let toastTimer = null;
 function showToast(msg, isError) {
-  const t = document.getElementById("toast");
+  const t = $("toast");
   t.textContent = msg;
   t.classList.toggle("error", !!isError);
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), isError ? 5000 : 2200);
+  toastTimer = setTimeout(() => t.classList.remove("show"), isError ? 4500 : 2200);
 }
 
-// ---- 起動 ----
 machines = loadMachines();
 renderAll();
 </script>
