@@ -259,6 +259,35 @@
   .lrow .due.soon { color: #a86f0f; }
   .lrow .due.overdue { color: var(--danger); }
 
+  /* 案件のバッジ */
+  .gtag {
+    flex: none; font-size: 9.5px; font-weight: 700;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    padding: 2px 6px; line-height: 1.3;
+    max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gtag.sm { font-size: 9px; padding: 1px 4px; max-width: 5.5em; }
+
+  /* 案件で絞り込み中のバナー */
+  .gbanner {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    background: var(--accent); color: #fff; border: none;
+    padding: 8px 11px; font-size: 12px; font-weight: 700;
+    cursor: pointer; box-shadow: var(--lift);
+  }
+  .gbanner .x { margin-left: auto; font-size: 11px; }
+
+  /* ホームの案件行 */
+  .hrow .gname { font-size: 12px; font-weight: 800; flex: none; max-width: 7em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hrow .gpg { margin-left: auto; flex: none; display: flex; align-items: center; gap: 6px; }
+  .hrow .gpg .b { width: 38px; height: 4px; background: var(--panel-in-2); }
+  .hrow .gpg .b i { display: block; height: 100%; background: var(--accent); }
+  .hrow .gpg .t { font-size: 10px; font-weight: 700; color: var(--ink-2); min-width: 4.4em; text-align: right; }
+  .grow-row { border-left-color: var(--accent); }
+
   .morebtn {
     width: 100%; margin-top: 8px; padding: 8px;
     border: 1px solid var(--line-2); background: transparent;
@@ -1030,6 +1059,12 @@
           </div>
         </div>
         <div class="field">
+          <label for="fGroup">案件（複数号機をまとめる名前）</label>
+          <input id="fGroup" list="groupList" placeholder="例: 秋物セット（空欄なら単独）" autocomplete="off">
+          <datalist id="groupList"></datalist>
+          <p class="hint">同じ名前を入れた号機どうしが1つの案件として扱われます。空欄にすると外れます。</p>
+        </div>
+        <div class="field">
           <label for="fStatus">状態</label>
           <select id="fStatus">
             <option value="running">稼働中</option>
@@ -1402,6 +1437,7 @@ const VIEW_KEY = "factory-list-mode";
 let machines = [];
 let filterStatus = "all";
 let listMode = "card";   // "card" | "compact"
+let groupFilter = "";    // 案件で絞り込み中の名前
 let histAll = false;     // 履歴をすべて表示するか
 let query = "";
 let editingId = null; // null = 新規追加
@@ -1575,6 +1611,7 @@ function normalize(m) {
     model: m.model || "",
     status: STATUS[m.status] ? m.status : "idle",
     sku: m.sku || "",
+    group: String(m.group ?? "").trim(),
     uptime: Math.max(0, Math.min(100, Math.round(num(m.uptime)))),
     startDate: m.startDate || "",
     nextChange: m.nextChange || "",
@@ -1706,6 +1743,7 @@ function renderSummary() {
 function filteredMachines() {
   const q = query.trim().toLowerCase();
   return machines
+    .filter(m => !groupFilter || (m.group || "").trim() === groupFilter)
     .filter(m => filterStatus === "all" || m.status === filterStatus)
     .filter(m => {
       if (!q) return true;
@@ -1741,6 +1779,7 @@ function cardHtml(m) {
     <button class="card" type="button" data-id="${escapeHtml(m.id)}">
       <span class="head">
         <span class="tag" style="--tg:${st.color}">${st.label}</span>
+        ${m.group ? `<span class="gtag">${escapeHtml(m.group)}</span>` : ""}
         <span class="no">
           <b>${escapeHtml(m.no)}</b><i>号機</i>
           <span class="model">${escapeHtml(m.model)}</span>
@@ -1780,6 +1819,7 @@ function rowHtml(m) {
       <span class="no">${escapeHtml(m.no)}</span>
       <span class="tg">${st.label}</span>
       <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+      ${m.group ? `<span class="gtag sm">${escapeHtml(m.group)}</span>` : ""}
       <span class="pg">
         <span class="b"><i style="width:${Math.min(100, c.progress)}%"></i></span>
         <span class="t num">${m.rolls > 0 ? `${Math.round(c.producedRolls)}/${m.rolls}反` : "—"}</span>
@@ -1809,9 +1849,22 @@ function renderList() {
     return;
   }
 
-  list.innerHTML =
-    `<div class="count-line">${items.length} / ${machines.length} units</div>`
+  const banner = groupFilter
+    ? `<button class="gbanner" type="button" id="clearGroup">
+         <span>案件「${escapeHtml(groupFilter)}」で絞り込み中</span><span class="x">解除 ×</span>
+       </button>`
+    : "";
+
+  list.innerHTML = banner
+    + `<div class="count-line">${items.length} / ${machines.length} units</div>`
     + items.map(listMode === "compact" ? rowHtml : cardHtml).join("");
+
+  if (groupFilter) {
+    $("clearGroup").addEventListener("click", () => {
+      groupFilter = "";
+      renderList();
+    });
+  }
 
   list.querySelectorAll(".card, .lrow").forEach(el => {
     el.addEventListener("click", () => openEditSheet(el.dataset.id));
@@ -1848,6 +1901,49 @@ function renderChips() {
       renderList();
     });
   });
+}
+
+/* ============================================================
+   案件ごとの集計
+   同じ案件名を入れた号機どうしを1つのまとまりとして扱う。
+   関連する品番を別の号機で同時に流すときに使う。
+   ============================================================ */
+function aggregateGroups() {
+  const map = new Map();
+  for (const m of machines) {
+    const g = (m.group || "").trim();
+    if (!g) continue;
+    let e = map.get(g);
+    if (!e) {
+      e = { name: g, units: [], skus: new Set(), rolls: 0, done: 0, totalKg: 0, restKg: 0, due: null };
+      map.set(g, e);
+    }
+    const c = calc(m);
+    e.units.push(m.no);
+    if (m.sku) e.skus.add(m.sku);
+    e.rolls += m.rolls;
+    e.done += c.producedRolls;
+    e.totalKg += c.total;
+    e.restKg += c.remaining;
+    // 案件のなかで一番近い予定日を代表にする
+    const d = daysUntil(m.nextChange);
+    if (d !== null && (e.due === null || d < e.due)) e.due = d;
+  }
+  return [...map.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, "ja", { numeric: true }));
+}
+
+// 入力済みの案件名をプルダウンの候補にする
+function renderGroupOptions() {
+  const set = new Set();
+  for (const m of machines) {
+    const g = (m.group || "").trim();
+    if (g) set.add(g);
+  }
+  $("groupList").innerHTML = [...set]
+    .sort((a, b) => a.localeCompare(b, "ja", { numeric: true }))
+    .map(v => `<option value="${escapeHtml(v)}"></option>`)
+    .join("");
 }
 
 /* ============================================================
@@ -1998,6 +2094,7 @@ function renderHome() {
 
   const today = todayStr();
   const info = machines.map(m => ({ m, c: calc(m) }));
+  const groups = aggregateGroups();
 
   // 本日の水揚げ
   const todayRolls = machines.reduce((s, m) =>
@@ -2041,6 +2138,25 @@ function renderHome() {
         <span class="sub">記録済み ${recorded} / ${machines.length}号機</span>
       </div>
     </div>
+
+    ${groups.length ? `
+    <div class="hcard">
+      <span class="micro">jobs</span>
+      <h2><span class="bar"></span>案件<span class="n">${groups.length}</span></h2>
+      ${groups.map(g => {
+        const pct = g.rolls > 0 ? (g.done / g.rolls) * 100 : 0;
+        const due = g.due === null ? "" : g.due < 0 ? `${-g.due}日超過` : g.due === 0 ? "今日" : `あと${g.due}日`;
+        return `<button class="hrow grow-row" type="button" data-group="${escapeHtml(g.name)}">
+          <span class="gname">${escapeHtml(g.name)}</span>
+          <span class="txt">${escapeHtml(g.units.join("・"))}号機 ／ ${escapeHtml([...g.skus].join("・")) || "品番未設定"}</span>
+          <span class="gpg">
+            <span class="b"><i style="width:${Math.min(100, pct)}%"></i></span>
+            <span class="t num">${Math.round(g.done)}/${Math.round(g.rolls)}反</span>
+          </span>
+          ${due ? `<span class="val${g.due < 0 ? " bad" : ""}">${due}</span>` : ""}
+        </button>`;
+      }).join("")}
+    </div>` : ""}
 
     <div class="hcard">
       <span class="micro">attention</span>
@@ -2091,8 +2207,14 @@ function renderHome() {
 
   box.querySelectorAll(".hrow").forEach(r =>
     r.addEventListener("click", () => {
-      if (r.dataset.sku) setView("yarn");   // 糸の不足は品番ごとなので原糸へ
-      else openFromRow(r.dataset.id);
+      if (r.dataset.group) {                // 案件はその号機だけの一覧へ
+        groupFilter = r.dataset.group;
+        setView("list");
+      } else if (r.dataset.sku) {            // 糸の不足は品番ごとなので原糸へ
+        setView("yarn");
+      } else {
+        openFromRow(r.dataset.id);
+      }
     }));
 }
 
@@ -2294,6 +2416,7 @@ function formToMachine() {
     model: $("fModel").value.trim(),
     status: $("fStatus").value,
     sku: $("fSku").value.trim(),
+    group: $("fGroup").value.trim(),
     uptime: $("fUptime").value === "" ? 0 : $("fUptime").value,
     startDate: $("fStart").value,
     nextChange: $("fNext").value,
@@ -2332,6 +2455,7 @@ function fillForm(m) {
   $("fModel").value = m.model;
   $("fStatus").value = m.status;
   $("fSku").value = m.sku;
+  $("fGroup").value = m.group;
   $("fUptime").value = m.uptime || "";
   $("fStart").value = m.startDate;
   $("fNext").value = m.nextChange;
@@ -2555,6 +2679,7 @@ function openEditSheet(id) {
   $("qRolls").value = "";
   histAll = false;
   renderCountOptions();
+  renderGroupOptions();
   $("liftSec").style.opacity = m ? "1" : "0.6";
 
   renderCalcPanel();
@@ -2576,7 +2701,7 @@ function closeEditSheet() {
 [
   "fUptime", "fSku", "fRolls", "fWeight", "fLoss",
   "fRatioF", "fRatioM", "fRatioB", "fOrdF", "fOrdM", "fOrdB",
-  "fCountF", "fCountM", "fCountB", "fStart", "fNext",
+  "fCountF", "fCountM", "fCountB", "fStart", "fNext", "fGroup",
   "nSku", "nRolls", "nWeight", "nStart", "nEnd",
   "nRatioF", "nRatioM", "nRatioB", "nCountF", "nCountM", "nCountB",
   "nOrdF", "nOrdM", "nOrdB",
