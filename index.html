@@ -63,6 +63,8 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* display を指定した要素にも hidden 属性を効かせる */
+  [hidden] { display: none !important; }
   html {
     -webkit-text-size-adjust: 100%;
     background-color: var(--stage); /* 画像が読めない場合の下地 */
@@ -72,7 +74,7 @@
     position: relative;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     color: var(--ink);
-    padding-bottom: calc(104px + env(safe-area-inset-bottom));
+    padding-bottom: calc(122px + env(safe-area-inset-bottom));
     -webkit-font-smoothing: antialiased;
     background: transparent;
   }
@@ -303,7 +305,7 @@
   /* ---------------- FAB ---------------- */
   .fabs {
     position: fixed; right: 12px;
-    bottom: calc(14px + env(safe-area-inset-bottom));
+    bottom: calc(72px + env(safe-area-inset-bottom));
     display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
     z-index: 6;
   }
@@ -497,7 +499,7 @@
   /* トースト */
   .toast {
     position: fixed; left: 12px; right: 12px;
-    bottom: calc(84px + env(safe-area-inset-bottom));
+    bottom: calc(130px + env(safe-area-inset-bottom));
     z-index: 20;
     background: rgba(20, 23, 27, 0.95);
     color: #f2f3f4;
@@ -514,6 +516,140 @@
   @media (prefers-reduced-motion: reduce) {
     .sheet, .toast { transition: none; }
   }
+
+  /* ---------------- 下部タブ ---------------- */
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 8;
+    display: flex;
+    background: rgba(16, 20, 25, 0.94);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab {
+    flex: 1; border: none; background: transparent; cursor: pointer;
+    padding: 9px 4px 10px;
+    display: grid; gap: 3px; justify-items: center;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .tab .ti { width: 17px; height: 17px; background: currentColor; }
+  .tab .tl { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; }
+  .tab[aria-selected="true"] { color: var(--accent); }
+  .tab[aria-selected="true"] .tl { font-weight: 800; }
+  /* 各タブのアイコン形状 */
+  .ti-home  { clip-path: polygon(50% 0, 100% 42%, 100% 100%, 0 100%, 0 42%); }
+  .ti-list  { clip-path: polygon(0 0, 100% 0, 100% 22%, 0 22%, 0 39%, 100% 39%, 100% 61%, 0 61%, 0 78%, 100% 78%, 100% 100%, 0 100%); }
+  .ti-gantt { clip-path: polygon(0 6%, 62% 6%, 62% 28%, 0 28%, 0 39%, 100% 39%, 100% 61%, 0 61%, 0 72%, 78% 72%, 78% 94%, 0 94%); }
+
+  /* ---------------- ホーム ---------------- */
+  .home { padding: 4px 12px 12px; display: grid; gap: 8px; }
+  .hcard {
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: var(--lift);
+    padding: 11px 12px 12px;
+  }
+  .hcard > .micro { margin-bottom: 7px; }
+  .hcard h2 {
+    font-size: 12px; font-weight: 800; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 7px; margin-bottom: 8px;
+  }
+  .hcard h2 .bar { width: 3px; height: 12px; background: var(--accent); flex: none; }
+  .hcard h2 .n {
+    margin-left: auto; font-size: 11px; font-weight: 700;
+    background: var(--char); color: var(--on-char); padding: 2px 7px;
+  }
+  .hcard h2 .n.warn { background: var(--danger); }
+
+  .hbig { display: flex; align-items: baseline; gap: 10px; }
+  .hbig .v { font-size: 30px; font-weight: 300; letter-spacing: 0.02em; line-height: 1.05; }
+  .hbig .v small { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-left: 2px; }
+  .hbig .sub { margin-left: auto; text-align: right; font-size: 11px; color: var(--ink-2); font-weight: 600; }
+
+  .hrow {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; text-align: left; cursor: pointer;
+    background: var(--panel-in); border: none;
+    border-left: 3px solid var(--hc, var(--char));
+    padding: 7px 9px; margin-top: 5px;
+  }
+  .hrow:active { background: rgba(0, 0, 0, 0.06); }
+  .hrow .no { font-size: 13px; font-weight: 800; flex: none; min-width: 2.6em; }
+  .hrow .txt {
+    font-size: 11px; color: var(--ink-2); font-weight: 600; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hrow .val { margin-left: auto; font-size: 12px; font-weight: 800; flex: none; }
+  .hrow .val.bad { color: var(--danger); }
+  .hempty { font-size: 11px; color: var(--ink-2); padding: 6px 0 2px; }
+
+  /* ---------------- ガントチャート ---------------- */
+  .gantt { padding: 4px 12px 12px; }
+  .gwrap {
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: var(--lift);
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .ginner { position: relative; }
+  .grow {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid var(--line);
+    min-height: 38px;
+  }
+  .grow:last-child { border-bottom: none; }
+  .ghead { min-height: 30px; background: var(--panel-in-2); }
+
+  .glabel {
+    position: sticky; left: 0; z-index: 2;
+    width: 84px; flex: none;
+    background: var(--panel);
+    border-right: 1px solid var(--line-2);
+    padding: 5px 7px;
+    display: grid; align-content: center; gap: 1px;
+  }
+  .ghead .glabel { background: #e3e3e1; }
+  .glabel .n { font-size: 13px; font-weight: 800; line-height: 1.1; }
+  .glabel .s {
+    font-size: 9px; color: var(--ink-2); font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .gtrack { position: relative; flex: none; }
+  .gtick {
+    position: absolute; top: 0; bottom: 0; width: 1px;
+    background: rgba(0, 0, 0, 0.07);
+  }
+  .gtick.today { background: var(--danger); width: 2px; z-index: 3; }
+  .gtick-l {
+    position: absolute; top: 6px; font-size: 9px; color: var(--ink-2);
+    font-weight: 700; transform: translateX(3px); white-space: nowrap;
+  }
+  .gtick-l.today { color: var(--danger); }
+
+  .gbar {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    height: 15px; background: rgba(0, 0, 0, 0.10);
+    border-left: 2px solid var(--gc);
+    overflow: hidden;
+  }
+  .gbar i {
+    display: block; height: 100%; background: var(--gc); opacity: 0.85;
+  }
+  .gproj {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    height: 15px; border: 1px dashed var(--danger);
+    border-left: none; background: rgba(207, 74, 63, 0.10);
+  }
+  .gbar-l {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: 9px; font-weight: 700; color: var(--ink-2);
+    white-space: nowrap; padding-left: 4px;
+  }
+  .gnote {
+    margin-top: 8px; font-size: 10px; color: rgba(255, 255, 255, 0.62);
+    line-height: 1.7; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  .gnote b { color: #fff; font-weight: 700; }
 
   /* ---------------- 起動画面 ---------------- */
   .boot {
@@ -678,17 +814,31 @@
   </div>
 </header>
 
-<div class="toolbar">
+<div class="toolbar" id="toolbar">
   <input class="search" id="search" type="search" placeholder="号機・品番・機種で検索" autocomplete="off">
   <div class="chips" id="chips"></div>
 </div>
 
+<section class="home" id="home" hidden></section>
 <main id="list"></main>
+<section class="gantt" id="gantt" hidden></section>
 
-<div class="fabs">
+<div class="fabs" id="fabs">
   <button class="fab fab-bulk" id="fabBulk" type="button">一括登録</button>
   <button class="fab fab-add" id="fabAdd" type="button" aria-label="機械を追加">＋</button>
 </div>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" type="button" role="tab" data-view="home" aria-selected="false">
+    <span class="ti ti-home"></span><span class="tl">ホーム</span>
+  </button>
+  <button class="tab" type="button" role="tab" data-view="list" aria-selected="true">
+    <span class="ti ti-list"></span><span class="tl">号機一覧</span>
+  </button>
+  <button class="tab" type="button" role="tab" data-view="gantt" aria-selected="false">
+    <span class="ti ti-gantt"></span><span class="tl">ガント</span>
+  </button>
+</nav>
 
 <!-- ============ 編集シート ============ -->
 <div class="overlay" id="editOverlay"></div>
@@ -724,15 +874,9 @@
             <option value="idle" selected>計画停止</option>
           </select>
         </div>
-        <div class="grid2" style="margin-bottom:9px;">
-          <div class="field">
-            <label for="fUptime">稼働率（%）</label>
-            <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
-          </div>
-          <div class="field">
-            <label for="fNext">次回予定日</label>
-            <input id="fNext" type="date">
-          </div>
+        <div class="field">
+          <label for="fUptime">稼働率（%）</label>
+          <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
         </div>
         <div class="field">
           <label for="fNote">メモ</label>
@@ -759,11 +903,26 @@
             <input id="fWeight" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
           </div>
         </div>
+        <div class="grid2" style="margin-top:9px;">
+          <div class="field">
+            <label for="fStart">開始日</label>
+            <input id="fStart" type="date">
+          </div>
+          <div class="field">
+            <label for="fNext">次回予定日</label>
+            <input id="fNext" type="date">
+          </div>
+        </div>
         <div class="calc-row" style="margin-top:10px; padding-top:9px; border-top:1px solid var(--line);">
           <span class="k">合計生産量</span>
           <span class="v num" id="cTotal">0.0 kg</span>
         </div>
         <p class="hint" id="totalHint">重量（1反あたり）× 反数で自動計算します。</p>
+        <div class="calc-row" style="margin-top:9px; padding-top:9px; border-top:1px solid var(--line);">
+          <span class="k">完了予測</span>
+          <span class="v num" id="cProjected">–</span>
+        </div>
+        <p class="hint" id="projectedHint">水揚げを記録すると、そのペースから完了日を予測します。</p>
       </div>
     </div>
 
@@ -986,6 +1145,38 @@ function todayStr() {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+// "YYYY-MM-DD" を Date に。無効なら null
+function parseDate(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ""));
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d) ? null : d;
+}
+
+function toDateStr(d) {
+  const p = x => String(x).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function addDays(dateStr, n) {
+  const d = parseDate(dateStr);
+  if (!d) return "";
+  d.setDate(d.getDate() + n);
+  return toDateStr(d);
+}
+
+// a から b までの日数（b - a）
+function diffDays(a, b) {
+  const da = parseDate(a), db = parseDate(b);
+  if (!da || !db) return null;
+  return Math.round((db - da) / 86400000);
+}
+
+function mdLabel(dateStr) {
+  const d = parseDate(dateStr);
+  return d ? `${d.getMonth() + 1}/${d.getDate()}` : "";
+}
+
 // 号機番号の自然順ソート（"2" < "10"）
 function compareNo(a, b) {
   return String(a.no).localeCompare(String(b.no), "ja", { numeric: true });
@@ -1058,6 +1249,7 @@ function normalize(m) {
     status: STATUS[m.status] ? m.status : "idle",
     sku: m.sku || "",
     uptime: Math.max(0, Math.min(100, Math.round(num(m.uptime)))),
+    startDate: m.startDate || "",
     nextChange: m.nextChange || "",
     note: m.note || "",
     rolls,
@@ -1120,6 +1312,28 @@ function calc(m) {
 
   const rolls = Math.max(0, num(m.rolls));
   const producedRolls = Math.max(0, Math.min(rolls, num(m.producedRolls)));
+  const remainRolls = Math.max(0, rolls - producedRolls);
+
+  // 水揚げを記録した日数で割って日平均の反数を出す（動かした日だけを母数にする）
+  const workedDays = new Set(m.log.map(e => e.d)).size;
+  const loggedRolls = m.log.reduce((s, e) => s + num(e.rolls), 0);
+  const perDay = workedDays > 0 ? loggedRolls / workedDays : 0;
+
+  // 現在のペースで残りを消化しきる日
+  let projected = "";
+  let daysLeft = null;
+  if (perDay > 0 && remainRolls > 0) {
+    daysLeft = Math.ceil(remainRolls / perDay);
+    projected = addDays(todayStr(), daysLeft);
+  } else if (remainRolls === 0 && rolls > 0) {
+    daysLeft = 0;
+    projected = todayStr();
+  }
+
+  // 予定日に対する遅れ（＋なら遅れ、−なら前倒し）
+  const delay = (projected && m.nextChange)
+    ? diffDays(m.nextChange, projected)
+    : null;
 
   return {
     total,
@@ -1127,7 +1341,11 @@ function calc(m) {
     remaining,
     rolls,
     producedRolls,
-    remainRolls: Math.max(0, rolls - producedRolls),
+    remainRolls,
+    perDay,
+    projected,
+    daysLeft,
+    delay,
     progress: rolls > 0 ? (producedRolls / rolls) * 100 : 0,
     need,
     ratioSum: YARNS.reduce((s, y) => s + num(m.ratio[y.key]), 0),
@@ -1276,10 +1494,278 @@ function renderChips() {
   });
 }
 
+/* ============================================================
+   ホーム（ダッシュボード）
+   ============================================================ */
+function openFromRow(id) { openEditSheet(id); }
+
+function homeRows(items, render) {
+  if (items.length === 0) return `<div class="hempty">該当なし</div>`;
+  return items.map(render).join("");
+}
+
+function renderHome() {
+  const box = document.getElementById("home");
+  if (machines.length === 0) {
+    box.innerHTML = `
+      <div class="hcard">
+        <span class="micro">welcome</span>
+        <h2><span class="bar"></span>はじめに</h2>
+        <div class="hempty">
+          まだ号機が登録されていません。「号機一覧」から一括登録できます。
+        </div>
+      </div>`;
+    return;
+  }
+
+  const today = todayStr();
+  const info = machines.map(m => ({ m, c: calc(m) }));
+
+  // 本日の水揚げ
+  const todayRolls = machines.reduce((s, m) =>
+    s + m.log.filter(e => e.d === today).reduce((t, e) => t + num(e.rolls), 0), 0);
+  const todayKg = machines.reduce((s, m) =>
+    s + m.log.filter(e => e.d === today).reduce((t, e) => t + num(e.rolls) * num(m.weightPerRoll), 0), 0);
+  const recorded = machines.filter(m => m.log.some(e => e.d === today)).length;
+
+  // 要注意：停止／予定日超過／予測が予定より遅れ
+  const alerts = info.filter(({ m, c }) => {
+    const d = daysUntil(m.nextChange);
+    return m.status === "stopped" || (d !== null && d < 0) || (c.delay != null && c.delay > 0);
+  }).sort((a, b) => (b.c.delay || 0) - (a.c.delay || 0));
+
+  // 今週の予定（7日以内）
+  const week = info.filter(({ m }) => {
+    const d = daysUntil(m.nextChange);
+    return d !== null && d >= 0 && d <= 7;
+  }).sort((a, b) => daysUntil(a.m.nextChange) - daysUntil(b.m.nextChange));
+
+  // 糸不足（発注済みが全体必要量に届いていない）
+  const short = [];
+  for (const { m, c } of info) {
+    for (const y of YARNS) {
+      const n = c.need[y.key];
+      if (num(m.ordered[y.key]) > 0 && n.diff < -0.05) {
+        short.push({ m, y, lack: -n.diff });
+      }
+    }
+  }
+  short.sort((a, b) => b.lack - a.lack);
+
+  box.innerHTML = `
+    <div class="hcard">
+      <span class="micro">today's output</span>
+      <h2><span class="bar"></span>本日の水揚げ</h2>
+      <div class="hbig">
+        <span class="v num">${Math.round(todayRolls)}<small>反</small></span>
+        <span class="v num">${fmt(todayKg)}<small>kg</small></span>
+        <span class="sub">記録済み ${recorded} / ${machines.length}号機</span>
+      </div>
+    </div>
+
+    <div class="hcard">
+      <span class="micro">attention</span>
+      <h2><span class="bar"></span>要注意
+        <span class="n${alerts.length ? " warn" : ""}">${alerts.length}</span></h2>
+      ${homeRows(alerts.slice(0, 6), ({ m, c }) => {
+        const d = daysUntil(m.nextChange);
+        const reason = m.status === "stopped" ? "停止中"
+          : (d !== null && d < 0) ? `予定 ${-d}日超過`
+          : `予定より${c.delay}日遅れ`;
+        const st = STATUS[m.status] || STATUS.idle;
+        return `<button class="hrow" type="button" data-id="${escapeHtml(m.id)}" style="--hc:${st.color}">
+          <span class="no">${escapeHtml(m.no)}</span>
+          <span class="txt">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+          <span class="val bad">${reason}</span>
+        </button>`;
+      })}
+    </div>
+
+    <div class="hcard">
+      <span class="micro">this week</span>
+      <h2><span class="bar"></span>今週の予定<span class="n">${week.length}</span></h2>
+      ${homeRows(week.slice(0, 6), ({ m }) => {
+        const d = daysUntil(m.nextChange);
+        const st = STATUS[m.status] || STATUS.idle;
+        return `<button class="hrow" type="button" data-id="${escapeHtml(m.id)}" style="--hc:${st.color}">
+          <span class="no">${escapeHtml(m.no)}</span>
+          <span class="txt">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+          <span class="val">${d === 0 ? "今日" : `あと${d}日`}</span>
+        </button>`;
+      })}
+    </div>
+
+    <div class="hcard">
+      <span class="micro">yarn shortage</span>
+      <h2><span class="bar"></span>糸の不足
+        <span class="n${short.length ? " warn" : ""}">${short.length}</span></h2>
+      ${homeRows(short.slice(0, 6), ({ m, y, lack }) => {
+        const cnt = (m.counts[y.key] || "").trim();
+        return `<button class="hrow" type="button" data-id="${escapeHtml(m.id)}" style="--hc:${y.color}">
+          <span class="no">${escapeHtml(m.no)}</span>
+          <span class="txt">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span>
+          <span class="val bad">−${fmt(lack)}kg</span>
+        </button>`;
+      })}
+    </div>`;
+
+  box.querySelectorAll(".hrow").forEach(r =>
+    r.addEventListener("click", () => openFromRow(r.dataset.id)));
+}
+
+/* ============================================================
+   ガントチャート
+   ============================================================ */
+const DAY_PX = 13; // 1日あたりの幅
+
+function renderGantt() {
+  const box = document.getElementById("gantt");
+  const items = machines
+    .filter(m => m.rolls > 0 || m.startDate || m.nextChange)
+    .sort(compareNo)
+    .map(m => ({ m, c: calc(m) }));
+
+  if (items.length === 0) {
+    box.innerHTML = `
+      <div class="hcard">
+        <div class="hempty">
+          開始日か次回予定日を登録すると、ここに工程が並びます。
+        </div>
+      </div>`;
+    return;
+  }
+
+  const today = todayStr();
+
+  // 表示範囲を決める。開始日・予定日・予測日をすべて含める
+  let min = today, max = today;
+  for (const { m, c } of items) {
+    for (const d of [m.startDate, m.nextChange, c.projected]) {
+      if (!d) continue;
+      if (d < min) min = d;
+      if (d > max) max = d;
+    }
+  }
+  const from = addDays(min, -2);
+  const to = addDays(max, 2);
+  const span = Math.max(7, diffDays(from, to) + 1);
+  const width = span * DAY_PX;
+  const trackW = width + 104; // 右端のラベルが入る余白
+  const xOf = d => (diffDays(from, d) || 0) * DAY_PX;
+
+  // 目盛り（週の区切り）
+  let ticks = "";
+  for (let i = 0; i < span; i++) {
+    const d = addDays(from, i);
+    const dt = parseDate(d);
+    const isToday = d === today;
+    if (!isToday && dt.getDay() !== 1) continue; // 月曜と今日だけ
+    ticks += `<span class="gtick${isToday ? " today" : ""}" style="left:${i * DAY_PX}px"></span>`;
+  }
+
+  let headLabels = "";
+  for (let i = 0; i < span; i++) {
+    const d = addDays(from, i);
+    const dt = parseDate(d);
+    if (d !== today && dt.getDay() !== 1) continue;
+    headLabels += `<span class="gtick-l${d === today ? " today" : ""}" style="left:${i * DAY_PX}px">${d === today ? "今日" : mdLabel(d)}</span>`;
+  }
+
+  const rows = items.map(({ m, c }) => {
+    const st = STATUS[m.status] || STATUS.idle;
+    const start = m.startDate || today;
+    // バーの終わりは予定日。無ければ予測日、それも無ければ開始日＋1日
+    const end = m.nextChange || c.projected || addDays(start, 1);
+    const x1 = xOf(start);
+    const x2 = Math.max(x1 + DAY_PX, xOf(end) + DAY_PX);
+    const barW = x2 - x1;
+
+    // 予測が予定を越える分だけ点線で伸ばす
+    let projBar = "";
+    let labelX = x2;
+    if (c.projected && m.nextChange && c.delay > 0) {
+      const px = Math.max(x2 + DAY_PX, xOf(c.projected) + DAY_PX);
+      projBar = `<span class="gproj" style="left:${x2}px; width:${px - x2}px"></span>`;
+      labelX = px; // ラベルは点線の先に置き、重ならないようにする
+    }
+
+    const label = c.delay != null && c.delay > 0
+      ? `${Math.round(c.progress)}%・${c.delay}日遅れ`
+      : `${Math.round(c.progress)}%`;
+
+    return `
+      <div class="grow">
+        <div class="glabel">
+          <span class="n">${escapeHtml(m.no)}</span>
+          <span class="s">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+        </div>
+        <div class="gtrack" style="width:${trackW}px">
+          ${ticks}
+          <span class="gbar" style="left:${x1}px; width:${barW}px; --gc:${st.color}">
+            <i style="width:${Math.min(100, c.progress)}%"></i>
+          </span>
+          ${projBar}
+          <span class="gbar-l" style="left:${labelX}px">${label}</span>
+        </div>
+      </div>`;
+  }).join("");
+
+  box.innerHTML = `
+    <div class="gwrap">
+      <div class="ginner">
+        <div class="grow ghead">
+          <div class="glabel"><span class="s">号機 / 品番</span></div>
+          <div class="gtrack" style="width:${trackW}px">${ticks}${headLabels}</div>
+        </div>
+        ${rows}
+      </div>
+    </div>
+    <div class="hcard" style="margin-top:8px;">
+      <p class="hint">
+        バーは<b>開始日から次回予定日</b>まで。塗りつぶしが<b>水揚げの進捗</b>、
+        赤い縦線が<b>今日</b>です。点線は<b>今のペースだと予定を超える見込み</b>の分を表します。
+        行をタップすると編集できます。
+      </p>
+    </div>`;
+
+  box.querySelectorAll(".grow").forEach((row, i) => {
+    if (i === 0) return; // ヘッダー行
+    row.style.cursor = "pointer";
+    row.addEventListener("click", () => openFromRow(items[i - 1].m.id));
+  });
+}
+
+/* ============================================================
+   画面の切り替え
+   ============================================================ */
+let currentView = "list";
+
+function setView(view) {
+  currentView = view;
+  document.getElementById("home").hidden = view !== "home";
+  document.getElementById("list").hidden = view !== "list";
+  document.getElementById("gantt").hidden = view !== "gantt";
+  document.getElementById("toolbar").hidden = view !== "list";
+  document.getElementById("fabs").hidden = view !== "list";
+  document.querySelectorAll(".tab").forEach(t =>
+    t.setAttribute("aria-selected", String(t.dataset.view === view)));
+  renderAll();
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll(".tab").forEach(t =>
+  t.addEventListener("click", () => setView(t.dataset.view)));
+
 function renderAll() {
   renderSummary();
-  renderChips();
-  renderList();
+  if (currentView === "list") {
+    renderChips();
+    renderList();
+  } else if (currentView === "home") {
+    renderHome();
+  } else {
+    renderGantt();
+  }
 }
 
 /* ============================================================
@@ -1299,6 +1785,7 @@ function formToMachine() {
     status: $("fStatus").value,
     sku: $("fSku").value.trim(),
     uptime: $("fUptime").value === "" ? 0 : $("fUptime").value,
+    startDate: $("fStart").value,
     nextChange: $("fNext").value,
     note: $("fNote").value.trim(),
     rolls: $("fRolls").value,
@@ -1324,6 +1811,7 @@ function fillForm(m) {
   $("fStatus").value = m.status;
   $("fSku").value = m.sku;
   $("fUptime").value = m.uptime || "";
+  $("fStart").value = m.startDate;
   $("fNext").value = m.nextChange;
   $("fNote").value = m.note;
   $("fRolls").value = m.rolls || "";
@@ -1380,6 +1868,24 @@ function renderCalcPanel() {
   $("totalHint").textContent = m.rolls > 0 && m.weightPerRoll > 0
     ? `重量 ${fmt(m.weightPerRoll, 2)}kg × ${m.rolls}反 = ${fmt(c.total)}kg`
     : "重量（1反あたり）× 反数で自動計算します。";
+
+  // 完了予測
+  const proj = $("cProjected");
+  if (!c.projected) {
+    proj.textContent = "–";
+    proj.className = "v num";
+    $("projectedHint").textContent = "水揚げを記録すると、そのペースから完了日を予測します。";
+  } else {
+    proj.textContent = mdLabel(c.projected);
+    proj.className = "v num" + (c.delay > 0 ? " short" : c.delay != null ? " over" : "");
+    const pace = `日平均 ${fmt(c.perDay, 1)}反`;
+    const rest = c.daysLeft === 0 ? "残りなし" : `残り ${c.remainRolls}反 であと${c.daysLeft}日`;
+    const gap = c.delay == null ? ""
+      : c.delay > 0 ? `　予定より${c.delay}日遅れ`
+      : c.delay < 0 ? `　予定より${-c.delay}日早い`
+      : "　予定どおり";
+    $("projectedHint").textContent = `${pace}／${rest}${gap}`;
+  }
 
   $("cBody").innerHTML = YARNS.map(y => {
     const n = c.need[y.key];
@@ -1467,7 +1973,7 @@ function closeEditSheet() {
 [
   "fUptime", "fSku", "fRolls", "fWeight", "fLoss",
   "fRatioF", "fRatioM", "fRatioB", "fOrdF", "fOrdM", "fOrdB",
-  "fCountF", "fCountM", "fCountB",
+  "fCountF", "fCountM", "fCountB", "fStart", "fNext",
 ].forEach(id => $(id).addEventListener("input", () => {
   // 反数か重量が変われば合計生産量が変わるので、スライダーの上限も合わせる
   if (id === "fRolls" || id === "fWeight") {
