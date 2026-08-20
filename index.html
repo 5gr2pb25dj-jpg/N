@@ -550,15 +550,21 @@
     color: rgba(255, 255, 255, 0.5); font-weight: 600;
   }
   .boot-name {
-    display: block; font-size: 18px; font-weight: 800; color: #fff;
-    letter-spacing: 0.14em; margin-top: 2px;
-    text-indent: 0.14em; /* 字間の余りぶんの左寄りを打ち消す */
+    display: block; font-size: 17px; font-weight: 500; color: #fff;
+    letter-spacing: 0.34em; margin-top: 3px;
+    text-indent: 0.34em; /* 字間の余りぶんの左寄りを打ち消す */
   }
+  /* 参考画面の数字は細く背が高い。太らせず字間で見せる */
   .boot-no {
-    display: block; font-size: 42px; font-weight: 800; color: #fff;
-    line-height: 1.05; margin-top: 6px; font-variant-numeric: tabular-nums;
+    display: block; font-size: 52px; font-weight: 250; color: #fff;
+    line-height: 1.0; margin-top: 8px;
+    letter-spacing: 0.08em; text-indent: 0.08em;
+    font-variant-numeric: tabular-nums;
   }
-  .boot-no small { font-size: 15px; font-weight: 700; vertical-align: super; opacity: 0.7; }
+  .boot-no small {
+    font-size: 15px; font-weight: 400; vertical-align: 22px;
+    opacity: 0.55; letter-spacing: 0;
+  }
 
   /* 走査線上の進捗 */
   .boot-pct {
