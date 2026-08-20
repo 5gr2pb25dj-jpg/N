@@ -501,6 +501,13 @@
   .calc-table tbody td { font-weight: 700; }
   .calc-table .yname { display: flex; align-items: center; gap: 5px; font-weight: 800; }
   .calc-table .yname::before { content: ""; width: 8px; height: 8px; background: var(--yc); flex: none; }
+  /* タップで検索できる番手 */
+  .calc-table button.yname {
+    border: none; background: transparent; padding: 0; cursor: pointer;
+    font-size: inherit; color: var(--accent);
+    text-decoration: underline; text-underline-offset: 2px;
+  }
+  .calc-table button.yname:active { opacity: 0.6; }
   .calc-table tr:last-child td { border-bottom: none; }
   .short { color: var(--danger); }
   .over  { color: var(--good); }
@@ -999,7 +1006,7 @@
 
 <div class="toolbar" id="toolbar">
   <div class="searchrow">
-    <input class="search" id="search" type="search" placeholder="号機・品番・機種で検索" autocomplete="off">
+    <input class="search" id="search" type="search" placeholder="号機・品番・番手・機種で検索" autocomplete="off">
     <button class="viewtoggle" id="viewToggle" type="button" aria-label="表示を切り替える">
       <span class="vi vi-list" id="viewIcon"></span>
       <span class="vl" id="viewLabel">一覧</span>
@@ -1792,8 +1799,13 @@ function filteredMachines() {
     .filter(m => filterStatus === "all" || m.status === filterStatus)
     .filter(m => {
       if (!q) return true;
-      return [m.no, m.sku, m.model].some(v =>
-        String(v ?? "").toLowerCase().includes(q));
+      // 号機・品番・機種に加えて、使用糸（番手）・案件・次の品番でも探せる
+      const hay = [
+        m.no, m.sku, m.model, m.group,
+        m.counts.f, m.counts.m, m.counts.b,
+        m.next.sku, m.next.counts.f, m.next.counts.m, m.next.counts.b,
+      ];
+      return hay.some(v => String(v ?? "").toLowerCase().includes(q));
     })
     .sort(compareNo);
 }
@@ -2082,7 +2094,9 @@ function renderYarn() {
       const cnt = [...e.counts[y.key]];
       return `
         <tr>
-          <td><span class="yname" style="--yc:${y.color}">${y.label}${cnt.length ? " " + escapeHtml(cnt.join("/")) : "糸"}</span></td>
+          <td>${cnt.length
+            ? `<button type="button" class="yname ylink" data-count="${escapeHtml(cnt[0])}" style="--yc:${y.color}">${y.label} ${escapeHtml(cnt.join("/"))}</button>`
+            : `<span class="yname" style="--yc:${y.color}">${y.label}糸</span>`}</td>
           <td class="num">${fmt(n.rest)}</td>
           <td class="num">${has ? fmt(n.onHand) : "–"}</td>
           <td class="num">${has ? `<span class="${cls}">${gap >= 0 ? "+" : ""}${fmt(gap)}</span>` : "–"}</td>
@@ -2108,10 +2122,24 @@ function renderYarn() {
       </div>`;
   }).join("")
   + `<div class="hcard"><p class="hint">
+      番手をタップすると、その糸を使っている号機を検索します。
       同じ品番を複数の号機で流している場合は合算しています。
       「次」は次の品番として登録されている分です。
       <b>過不足</b>は「現在庫 − 残り必要」で、マイナスの糸はその量だけ追加手配が要ります。
     </p></div>`;
+
+  // 番手をタップしたら、その糸を使っている号機を検索する
+  box.querySelectorAll(".ylink").forEach(btn =>
+    btn.addEventListener("click", () => searchFor(btn.dataset.count)));
+}
+
+// 指定した語で号機一覧を検索する
+function searchFor(text) {
+  query = text;
+  $("search").value = text;
+  groupFilter = "";
+  filterStatus = "all";
+  setView("list");
 }
 
 /* ============================================================
