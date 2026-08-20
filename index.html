@@ -1120,7 +1120,7 @@
           </div>
           <div class="field">
             <label for="fWeight">重量kg</label>
-            <input id="fWeight" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <input id="fWeight" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
         </div>
         <div class="grid2" style="margin-top:9px;">
@@ -1176,66 +1176,50 @@
         <div class="grid3" style="margin-bottom:9px;">
           <div class="field">
             <label for="fRatioF" class="yarn-label" style="--yc:var(--yarn-f)">表 %</label>
-            <input id="fRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+            <input id="fRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="0">
           </div>
           <div class="field">
             <label for="fRatioM" class="yarn-label" style="--yc:var(--yarn-m)">中 %</label>
-            <input id="fRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+            <input id="fRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="0">
           </div>
           <div class="field">
             <label for="fRatioB" class="yarn-label" style="--yc:var(--yarn-b)">裏 %</label>
-            <input id="fRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+            <input id="fRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="0">
           </div>
         </div>
         <div class="field">
           <label for="fLoss">ロス率（%）</label>
-          <input id="fLoss" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="3">
+          <input id="fLoss" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="3">
           <p class="hint" id="ratioHint"></p>
         </div>
       </div>
     </div>
 
-    <!-- 発注糸量 -->
+    <!-- 糸量 -->
     <div class="sec">
-      <div class="sec-l"><h3>発注<br>糸量</h3><span class="micro">ordered</span></div>
+      <div class="sec-l"><h3>糸量</h3><span class="micro">on hand</span></div>
       <div class="sec-r">
         <div class="grid3">
           <div class="field">
-            <label for="fOrdF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
-            <input id="fOrdF" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
-          </div>
-          <div class="field">
-            <label for="fOrdM" class="yarn-label" style="--yc:var(--yarn-m)">中 kg</label>
-            <input id="fOrdM" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
-          </div>
-          <div class="field">
-            <label for="fOrdB" class="yarn-label" style="--yc:var(--yarn-b)">裏 kg</label>
-            <input id="fOrdB" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
-          </div>
-        </div>
-        <p class="hint" style="margin-top:7px;">生産開始時に手配した量。当初計画の記録として残します。</p>
-
-        <p class="micro" style="margin:13px 0 6px;">on hand ／ 現在の糸量(kg)</p>
-        <div class="grid3">
-          <div class="field">
             <label for="fHandF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
-            <input id="fHandF" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <input id="fHandF" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
           <div class="field">
             <label for="fHandM" class="yarn-label" style="--yc:var(--yarn-m)">中 kg</label>
-            <input id="fHandM" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <input id="fHandM" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
           <div class="field">
             <label for="fHandB" class="yarn-label" style="--yc:var(--yarn-b)">裏 kg</label>
-            <input id="fHandB" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <input id="fHandB" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
         </div>
         <div class="quick" style="margin-top:9px;">
           <p class="hint" style="flex:1;">
-            今この号機にある量。不良で多く使った、他の品番へ回した、といった増減はここを直します。
+            今この号機にある量。不良で多く使った、他の品番へ回した、といった増減はここを直せば、
+            編める反数が下で再計算されます。
           </p>
           <button type="button" id="btnHandReset" class="btn" style="flex:none; padding:8px 12px; font-size:11px;">
-            発注量を入れる
+            残り必要量を入れる
           </button>
         </div>
       </div>
@@ -1261,13 +1245,17 @@
         </div>
         <p class="hint" id="gapHint"></p>
 
-        <p class="micro" style="margin:14px 0 4px;">plan ／ 当初計画との差</p>
+        <p class="micro" style="margin:14px 0 4px;">knittable ／ 今ある糸で編める反数</p>
+        <div class="calc-row">
+          <span class="k">編める反数</span>
+          <span class="v num" id="cKnit">–</span>
+        </div>
         <div class="calc-table">
           <table>
             <thead>
-              <tr><th>糸</th><th>全体必要</th><th>発注</th><th>差分</th></tr>
+              <tr><th>糸</th><th>1反あたり</th><th>現在庫</th><th>編める反数</th></tr>
             </thead>
-            <tbody id="cPlanBody"></tbody>
+            <tbody id="cKnitBody"></tbody>
           </table>
         </div>
         <p class="hint">
@@ -1320,7 +1308,7 @@
           </div>
           <div class="field">
             <label for="nWeight">重量kg</label>
-            <input id="nWeight" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <input id="nWeight" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
         </div>
         <div class="grid2" style="margin-top:9px;">
@@ -1354,31 +1342,31 @@
         <div class="grid3">
           <div class="field">
             <label for="nRatioF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
-            <input id="nRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+            <input id="nRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="0">
           </div>
           <div class="field">
             <label for="nRatioM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
-            <input id="nRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+            <input id="nRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="0">
           </div>
           <div class="field">
             <label for="nRatioB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
-            <input id="nRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+            <input id="nRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.01" placeholder="0">
           </div>
         </div>
 
-        <p class="micro" style="margin:12px 0 6px;">ordered ／ 発注糸量(kg)</p>
+        <p class="micro" style="margin:12px 0 6px;">on hand ／ 現在の糸量(kg)</p>
         <div class="grid3">
           <div class="field">
-            <label for="nOrdF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
-            <input id="nOrdF" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <label for="nHandF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
+            <input id="nHandF" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
           <div class="field">
-            <label for="nOrdM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
-            <input id="nOrdM" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <label for="nHandM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
+            <input id="nHandM" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
           <div class="field">
-            <label for="nOrdB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
-            <input id="nOrdB" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <label for="nHandB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
+            <input id="nHandB" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
         </div>
 
@@ -1388,7 +1376,7 @@
         </div>
         <div class="calc-table">
           <table>
-            <thead><tr><th>糸</th><th>必要量</th><th>発注</th><th>差分</th></tr></thead>
+            <thead><tr><th>糸</th><th>必要量</th><th>現在庫</th><th>過不足</th></tr></thead>
             <tbody id="nBody"></tbody>
           </table>
         </div>
@@ -1518,7 +1506,7 @@ function num(v, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function fmt(n, digits = 1) {
+function fmt(n, digits = 2) {
   return num(n).toFixed(digits);
 }
 
@@ -1592,7 +1580,6 @@ function normalizeOrder(o) {
   o = o || {};
   const r = o.ratio || {};
   const c = o.counts || {};
-  const od = o.ordered || {};
   const oh = o.onHand || {};
   const rolls = Math.max(0, Math.round(num(o.rolls)));
   const weightPerRoll = Math.max(0, num(o.weightPerRoll));
@@ -1606,13 +1593,12 @@ function normalizeOrder(o) {
     lossPct: o.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(o.lossPct)),
     ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
     counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
-    ordered: { f: Math.max(0, num(od.f)), m: Math.max(0, num(od.m)), b: Math.max(0, num(od.b)) },
     onHand: { f: Math.max(0, num(oh.f)), m: Math.max(0, num(oh.m)), b: Math.max(0, num(oh.b)) },
   };
 }
 
 // 生産量に対する表・中・裏の必要糸量
-function yarnNeed(totalKg, remainKg, ratio, lossPct, ordered, onHand) {
+function yarnNeed(totalKg, remainKg, ratio, lossPct, onHand) {
   const lossFactor = 1 + num(lossPct) / 100;
   const need = {};
   for (const y of YARNS) {
@@ -1623,7 +1609,6 @@ function yarnNeed(totalKg, remainKg, ratio, lossPct, ordered, onHand) {
     need[y.key] = {
       all,
       rest,
-      diff: num(ordered[y.key]) - all, // 発注 − 全体必要（当初計画に対する差）
       onHand: stock,
       gap: stock - rest,               // 現在庫 − 残り必要（今ある糸で足りるか）
     };
@@ -1633,7 +1618,6 @@ function yarnNeed(totalKg, remainKg, ratio, lossPct, ordered, onHand) {
 
 function normalize(m) {
   const r = m.ratio || {};
-  const o = m.ordered || {};
   const c = m.counts || {};
   const h = m.onHand || {};
 
@@ -1688,7 +1672,6 @@ function normalize(m) {
     producedKg,
     lossPct: m.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(m.lossPct)),
     ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
-    ordered: { f: Math.max(0, num(o.f)), m: Math.max(0, num(o.m)), b: Math.max(0, num(o.b)) },
     onHand: { f: Math.max(0, num(h.f)), m: Math.max(0, num(h.m)), b: Math.max(0, num(h.b)) },
     counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
     next: normalizeOrder(m.next),
@@ -1729,7 +1712,7 @@ function calc(m) {
   const produced = Math.max(0, Math.min(total, num(m.producedKg)));
   const remaining = Math.max(0, total - produced);
 
-  const need = yarnNeed(total, remaining, m.ratio, m.lossPct, m.ordered, m.onHand);
+  const need = yarnNeed(total, remaining, m.ratio, m.lossPct, m.onHand);
 
   const rolls = Math.max(0, num(m.rolls));
   const producedRolls = Math.max(0, Math.min(rolls, num(m.producedRolls)));
@@ -1756,6 +1739,22 @@ function calc(m) {
     ? diffDays(m.nextChange, projected)
     : null;
 
+  // 今ある糸で何反編めるか。1反あたりの消費量から逆算する。
+  // ロスで計算どおりに減らないので、在庫を直せばここが都度計算し直される。
+  const perRoll = {};
+  const knitBy = {};
+  let knittable = null;
+  const lossF = 1 + num(m.lossPct) / 100;
+  for (const y of YARNS) {
+    const r = num(m.ratio[y.key]) / 100;
+    const use = num(m.weightPerRoll) * r * lossF; // 1反あたりの消費量
+    perRoll[y.key] = use;
+    if (use <= 0) { knitBy[y.key] = null; continue; }
+    const n2 = num(m.onHand[y.key]) / use;
+    knitBy[y.key] = n2;
+    knittable = knittable === null ? n2 : Math.min(knittable, n2);
+  }
+
   return {
     total,
     produced,
@@ -1764,6 +1763,9 @@ function calc(m) {
     producedRolls,
     remainRolls,
     perDay,
+    perRoll,
+    knitBy,
+    knittable: knittable === null ? null : Math.floor(knittable),
     projected,
     daysLeft,
     delay,
@@ -2031,20 +2033,19 @@ function aggregateByCount() {
   const map = new Map();
 
   const add = (o, no, totalKg, restKg, label) => {
-    const nd = yarnNeed(totalKg, restKg, o.ratio, o.lossPct, o.ordered, o.onHand);
+    const nd = yarnNeed(totalKg, restKg, o.ratio, o.lossPct, o.onHand);
     for (const y of YARNS) {
       const cnt = (o.counts[y.key] || "").trim();
       if (!cnt) continue;
       if (num(o.ratio[y.key]) <= 0) continue; // 使っていない糸は数えない
       let e = map.get(cnt);
       if (!e) {
-        e = { count: cnt, all: 0, rest: 0, ordered: 0, onHand: 0,
+        e = { count: cnt, all: 0, rest: 0, onHand: 0,
               users: new Set(), positions: new Set() };
         map.set(cnt, e);
       }
       e.all += nd[y.key].all;
       e.rest += nd[y.key].rest;
-      e.ordered += num(o.ordered[y.key]);
       e.onHand += nd[y.key].onHand;
       e.positions.add(y.label);
       e.users.add(`${no}${label} ${o.sku || "品番未設定"}`);
@@ -2079,7 +2080,7 @@ function aggregateBySku() {
         need: {}, counts: {},
       };
       for (const y of YARNS) {
-        e.need[y.key] = { all: 0, rest: 0, ordered: 0, onHand: 0 };
+        e.need[y.key] = { all: 0, rest: 0, onHand: 0 };
         e.counts[y.key] = new Set();
       }
       map.set(key, e);
@@ -2101,11 +2102,10 @@ function aggregateBySku() {
     e.doneRolls += doneRolls;
     e.totalKg += totalKg;
     e.restKg += restKg;
-    const nd = yarnNeed(totalKg, restKg, o.ratio, o.lossPct, o.ordered, o.onHand);
+    const nd = yarnNeed(totalKg, restKg, o.ratio, o.lossPct, o.onHand);
     for (const y of YARNS) {
       e.need[y.key].all += nd[y.key].all;
       e.need[y.key].rest += nd[y.key].rest;
-      e.need[y.key].ordered += num(o.ordered[y.key]);
       e.need[y.key].onHand += nd[y.key].onHand;
       const c = (o.counts[y.key] || "").trim();
       if (c) e.counts[y.key].add(c);
@@ -2123,8 +2123,8 @@ function aggregateBySku() {
 
   // 不足の大きい品番を先に出す
   return [...map.values()].sort((a, b) => {
-    const la = Math.min(...YARNS.map(y => a.need[y.key].ordered - a.need[y.key].all));
-    const lb = Math.min(...YARNS.map(y => b.need[y.key].ordered - b.need[y.key].all));
+    const la = Math.min(...YARNS.map(y => a.need[y.key].onHand - a.need[y.key].rest));
+    const lb = Math.min(...YARNS.map(y => b.need[y.key].onHand - b.need[y.key].rest));
     if (la !== lb) return la - lb;
     return a.name.localeCompare(b.name, "ja", { numeric: true });
   });
@@ -2295,13 +2295,10 @@ function renderHome() {
   for (const e of aggregateBySku()) {
     for (const y of YARNS) {
       const n = e.need[y.key];
-      // 現在庫を入れていればそれで判定し、無ければ当初の発注量で判定する
-      if (n.onHand > 0) {
+      // 今ある糸で残りを編み切れるかで判定する
+      if (n.rest > 0.05) {
         const gap = n.onHand - n.rest;
-        if (gap < -0.05) short.push({ e, y, lack: -gap, kind: "在庫" });
-      } else if (n.ordered > 0) {
-        const diff = n.ordered - n.all;
-        if (diff < -0.05) short.push({ e, y, lack: -diff, kind: "発注" });
+        if (gap < -0.05) short.push({ e, y, lack: -gap });
       }
     }
   }
@@ -2374,11 +2371,11 @@ function renderHome() {
       <span class="micro">yarn shortage</span>
       <h2><span class="bar"></span>糸の不足
         <span class="n${short.length ? " warn" : ""}">${short.length}</span></h2>
-      ${homeRows(short.slice(0, 6), ({ e, y, lack, kind }) => {
+      ${homeRows(short.slice(0, 6), ({ e, y, lack }) => {
         const cnt = [...e.counts[y.key]].join("/");
         return `<button class="hrow" type="button" data-sku="1" style="--hc:${y.color}">
           <span class="no" style="min-width:0;">${escapeHtml(e.name)}</span>
-          <span class="txt">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}（${kind}）</span>
+          <span class="txt">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span>
           <span class="val bad">−${fmt(lack)}kg</span>
         </button>`;
       })}
@@ -2619,12 +2616,11 @@ function formToMachine() {
       lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
       ratio: { f: $("nRatioF").value, m: $("nRatioM").value, b: $("nRatioB").value },
       counts: { f: $("nCountF").value.trim(), m: $("nCountM").value.trim(), b: $("nCountB").value.trim() },
-      ordered: { f: $("nOrdF").value, m: $("nOrdM").value, b: $("nOrdB").value },
+      onHand: { f: $("nHandF").value, m: $("nHandM").value, b: $("nHandB").value },
     },
     history: existing ? existing.history : [],
     lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
     ratio: { f: $("fRatioF").value, m: $("fRatioM").value, b: $("fRatioB").value },
-    ordered: { f: $("fOrdF").value, m: $("fOrdM").value, b: $("fOrdB").value },
     onHand: { f: $("fHandF").value, m: $("fHandM").value, b: $("fHandB").value },
     log: editingId ? (machines.find(x => x.id === editingId)?.log || []) : [],
   });
@@ -2646,9 +2642,6 @@ function fillForm(m) {
   $("fRatioF").value = m.ratio.f || "";
   $("fRatioM").value = m.ratio.m || "";
   $("fRatioB").value = m.ratio.b || "";
-  $("fOrdF").value = m.ordered.f || "";
-  $("fOrdM").value = m.ordered.m || "";
-  $("fOrdB").value = m.ordered.b || "";
   $("fHandF").value = m.onHand.f || "";
   $("fHandM").value = m.onHand.m || "";
   $("fHandB").value = m.onHand.b || "";
@@ -2668,9 +2661,9 @@ function fillForm(m) {
   $("nCountF").value = n.counts.f;
   $("nCountM").value = n.counts.m;
   $("nCountB").value = n.counts.b;
-  $("nOrdF").value = n.ordered.f || "";
-  $("nOrdM").value = n.ordered.m || "";
-  $("nOrdB").value = n.ordered.b || "";
+  $("nHandF").value = n.onHand.f || "";
+  $("nHandM").value = n.onHand.m || "";
+  $("nHandB").value = n.onHand.b || "";
 
   syncSlider(m.rolls, m.producedRolls);
 }
@@ -2735,18 +2728,18 @@ function renderCalcPanel() {
 
   // 次のオーダー
   const n = m.next;
-  const nNeed = yarnNeed(n.totalKg, n.totalKg, n.ratio, n.lossPct, n.ordered);
+  const nNeed = yarnNeed(n.totalKg, n.totalKg, n.ratio, n.lossPct, n.onHand);
   $("nTotal").textContent = `${fmt(n.totalKg)} kg`;
   $("nBody").innerHTML = YARNS.map(y => {
     const nd = nNeed[y.key];
-    const has = num(n.ordered[y.key]) > 0;
-    const cls = nd.diff < -0.05 ? "short" : nd.diff > 0.05 ? "over" : "";
+    const has = num(n.onHand[y.key]) > 0;
+    const cls = nd.gap < -0.05 ? "short" : nd.gap > 0.05 ? "over" : "";
     return `
       <tr>
         <td><span class="yname" style="--yc:${y.color}">${y.label}糸${(n.counts[y.key] || "").trim() ? " " + escapeHtml(n.counts[y.key].trim()) : ""}</span></td>
         <td class="num">${fmt(nd.all)}</td>
-        <td class="num">${has ? fmt(num(n.ordered[y.key])) : "–"}</td>
-        <td class="num">${has ? `<span class="${cls}">${nd.diff >= 0 ? "+" : ""}${fmt(nd.diff)}</span>` : "–"}</td>
+        <td class="num">${has ? fmt(num(n.onHand[y.key])) : "–"}</td>
+        <td class="num">${has ? `<span class="${cls}">${nd.gap >= 0 ? "+" : ""}${fmt(nd.gap)}</span>` : "–"}</td>
       </tr>`;
   }).join("");
 
@@ -2781,26 +2774,45 @@ function renderCalcPanel() {
   }).join("");
 
   const anyStock = YARNS.some(y => c.need[y.key].onHand > 0);
-  $("gapHint").innerHTML = lack.length
-    ? `<span class="short">このままでは編み切れません。不足 ${escapeHtml(lack.join("／"))}</span>`
-    : anyStock
-      ? `<span class="over">今ある糸で残りを編み切れます。</span>`
-      : "現在の糸量を入れると、残りを編み切れるか判定します。";
+  // 判定は「編める反数」と揃える。糸量の過不足だけだと丸めで食い違うため
+  const kn = c.knittable;
+  const needRolls = Math.round(c.remainRolls);
+  const isShort = lack.length > 0 || (kn !== null && kn < needRolls);
+  const knNote = kn === null ? ""
+    : kn < needRolls
+      ? `　今ある糸では あと${kn}反（残り${needRolls}反に対し${needRolls - kn}反不足）`
+      : `　今ある糸で あと${kn}反ぶん`;
+  $("gapHint").innerHTML = !anyStock
+    ? "現在の糸量を入れると、残りを編み切れるか・あと何反編めるかを計算します。"
+    : isShort
+      ? `<span class="short">このままでは編み切れません。${lack.length ? "不足 " + escapeHtml(lack.join("／")) : ""}</span>${escapeHtml(knNote)}`
+      : `<span class="over">今ある糸で残りを編み切れます。</span>${escapeHtml(knNote)}`;
 
-  // 計画：当初の手配量との差
-  $("cPlanBody").innerHTML = YARNS.map(y => {
-    const n = c.need[y.key];
+  // 今ある糸で編める反数（1反あたりの消費量から逆算）
+  $("cKnitBody").innerHTML = YARNS.map(y => {
+    const use = c.perRoll[y.key];
     const cnt = (m.counts[y.key] || "").trim();
-    const hasOrder = num(m.ordered[y.key]) > 0;
-    const diffCls = n.diff < -0.05 ? "short" : n.diff > 0.05 ? "over" : "";
+    const n2 = c.knitBy[y.key];
+    const isMin = n2 !== null && c.knittable !== null && Math.floor(n2) === c.knittable;
     return `
       <tr>
         <td><span class="yname" style="--yc:${y.color}">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span></td>
-        <td class="num">${fmt(n.all)}</td>
-        <td class="num">${hasOrder ? fmt(num(m.ordered[y.key])) : "–"}</td>
-        <td class="num">${hasOrder ? `<span class="${diffCls}">${n.diff >= 0 ? "+" : ""}${fmt(n.diff)}</span>` : "–"}</td>
+        <td class="num">${use > 0 ? fmt(use) : "–"}</td>
+        <td class="num">${use > 0 ? fmt(num(m.onHand[y.key])) : "–"}</td>
+        <td class="num">${n2 === null ? "–" : `<span class="${isMin ? "short" : ""}">${Math.floor(n2)}反</span>`}</td>
       </tr>`;
   }).join("");
+
+  const knit = c.knittable;
+  const kEl = $("cKnit");
+  if (knit === null) {
+    kEl.textContent = "–";
+    kEl.className = "v num";
+  } else {
+    const short = knit < c.remainRolls;
+    kEl.textContent = `${knit}反`;
+    kEl.className = "v num" + (short ? " short" : " over");
+  }
 
   const sum = c.ratioSum;
   const sumNote = sum > 0 && Math.abs(sum - 100) > 0.05
@@ -2812,7 +2824,7 @@ function renderCalcPanel() {
   $("cFormula").textContent =
     `全体必要 = 合計生産量 ${fmt(c.total)}kg × 交編率 × ${fmt(1 + num(m.lossPct) / 100, 2)}／`
     + `残り必要 = 編残 ${fmt(c.remaining)}kg × 交編率 × ${fmt(1 + num(m.lossPct) / 100, 2)}／`
-    + `発注差分 = 発注糸量 − 全体必要（マイナスは不足）`;
+    + `編める反数 = 現在庫 ÷（重量 × 交編率 × ${fmt(1 + num(m.lossPct) / 100, 2)}）の最小値`;
 }
 
 function renderLog() {
@@ -2907,12 +2919,12 @@ function closeEditSheet() {
 // 入力のたびに計算パネルを更新する
 [
   "fUptime", "fSku", "fRolls", "fWeight", "fLoss",
-  "fRatioF", "fRatioM", "fRatioB", "fOrdF", "fOrdM", "fOrdB",
+  "fRatioF", "fRatioM", "fRatioB",
   "fCountF", "fCountM", "fCountB", "fStart", "fNext", "fGroup",
   "fHandF", "fHandM", "fHandB",
   "nSku", "nRolls", "nWeight", "nStart", "nEnd",
   "nRatioF", "nRatioM", "nRatioB", "nCountF", "nCountM", "nCountB",
-  "nOrdF", "nOrdM", "nOrdB",
+  "nHandF", "nHandM", "nHandB",
 ].forEach(id => $(id).addEventListener("input", () => {
   // 反数か重量が変われば合計生産量が変わるので、スライダーの上限も合わせる
   if (id === "fRolls" || id === "fWeight") {
@@ -3075,7 +3087,7 @@ $("btnPromote").addEventListener("click", () => {
   m.lossPct = n.lossPct;
   m.ratio = { ...n.ratio };
   m.counts = { ...n.counts };
-  m.ordered = { ...n.ordered };
+  m.onHand = { ...n.onHand };
   m.producedRolls = 0;
   m.producedKg = 0;
   m.log = [];
@@ -3094,11 +3106,14 @@ $("btnPromote").addEventListener("click", () => {
   }
 });
 
-// 現在庫を当初の発注量で埋める補助
+// 在庫欄を「残り必要量」で埋める補助（手配直後の目安として使う）
 $("btnHandReset").addEventListener("click", () => {
-  $("fHandF").value = $("fOrdF").value;
-  $("fHandM").value = $("fOrdM").value;
-  $("fHandB").value = $("fOrdB").value;
+  const c = calc(formToMachine());
+  // 小数第2位に切り上げる。切り捨てると1反ぶん足りなくなることがある
+  const up = v => (Math.ceil(num(v) * 100) / 100).toFixed(2);
+  $("fHandF").value = up(c.need.f.rest);
+  $("fHandM").value = up(c.need.m.rest);
+  $("fHandB").value = up(c.need.b.rest);
   renderCalcPanel();
 });
 
