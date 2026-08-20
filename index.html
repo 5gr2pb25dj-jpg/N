@@ -428,6 +428,11 @@
   .lift-head .big small { font-size: 12px; color: var(--ink-2); font-weight: 700; }
   .lift-head .rest { margin-left: auto; font-size: 11px; color: var(--ink-2); font-weight: 600; }
   .lift-head .rest b { color: var(--accent); font-size: 15px; font-weight: 800; }
+  .lift-sub {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--ink-2); font-weight: 600;
+    margin: -2px 0 4px;
+  }
 
   input[type="range"] { width: 100%; background: transparent; margin: 4px 0 2px; }
   input[type="range"]::-webkit-slider-runnable-track {
@@ -762,6 +767,29 @@
       </div>
     </div>
 
+    <!-- 番手 -->
+    <div class="sec">
+      <div class="sec-l"><h3>番手</h3><span class="micro">yarn count</span></div>
+      <div class="sec-r">
+        <div class="grid3">
+          <div class="field">
+            <label for="fCountF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
+            <input id="fCountF" list="countList" placeholder="30/1" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="fCountM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
+            <input id="fCountM" list="countList" placeholder="40/1" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="fCountB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
+            <input id="fCountB" list="countList" placeholder="30/1" autocomplete="off">
+          </div>
+        </div>
+        <datalist id="countList"></datalist>
+        <p class="hint">一度入力した番手は、次回から入力欄をタップして選べます。</p>
+      </div>
+    </div>
+
     <!-- 交編率 -->
     <div class="sec">
       <div class="sec-l"><h3>交編率</h3><span class="micro">blend</span></div>
@@ -815,16 +843,20 @@
       <div class="sec-l"><h3>水揚げ<br>記録</h3><span class="micro">output</span></div>
       <div class="sec-r">
         <div class="lift-head">
-          <span class="big num" id="liftValue">0.0<small> kg</small></span>
-          <span class="rest">残り <b class="num" id="liftRest">0.0</b> kg</span>
+          <span class="big num" id="liftValue">0<small> 反</small></span>
+          <span class="rest">残り <b class="num" id="liftRest">0</b> 反</span>
         </div>
-        <input type="range" id="fProduced" min="0" max="100" step="0.1" value="0">
-        <div class="range-ends"><span>0</span><span class="num" id="liftMax">0</span></div>
+        <div class="lift-sub">
+          <span class="num" id="liftKg">0.0 kg</span>
+          <span class="num" id="liftRestKg">残り 0.0 kg</span>
+        </div>
+        <input type="range" id="fProduced" min="0" max="1" step="1" value="0">
+        <div class="range-ends"><span>0反</span><span class="num" id="liftMax">0反</span></div>
 
         <div class="quick">
           <div class="field">
-            <label for="qKg">今朝の水揚げ(kg)</label>
-            <input id="qKg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <label for="qRolls">今朝の水揚げ(反)</label>
+            <input id="qRolls" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
           </div>
           <button type="button" id="qAdd">記録</button>
         </div>
@@ -984,6 +1016,7 @@ function dueText(days) {
 function normalize(m) {
   const r = m.ratio || {};
   const o = m.ordered || {};
+  const c = m.counts || {};
 
   // 合計生産量は「1反あたりの重量 × 反数」で決まる。
   // 重量を持たない旧データは、合計生産量から重量を逆算して移行する。
@@ -995,6 +1028,28 @@ function normalize(m) {
   } else if (totalKg > 0 && rolls > 0) {
     weightPerRoll = totalKg / rolls;
   }
+
+  // 水揚げは反数で管理し、kg は重量から導く。
+  // 反数を持たない旧データは、水揚げkgから反数を逆算する。
+  let producedRolls = 0;
+  let producedKg = Math.max(0, num(m.producedKg));
+  if (weightPerRoll > 0) {
+    producedRolls = m.producedRolls != null
+      ? num(m.producedRolls)
+      : producedKg / weightPerRoll;
+    producedRolls = Math.max(0, Math.min(rolls, producedRolls));
+    producedKg = producedRolls * weightPerRoll;
+  }
+
+  // 履歴も反数に統一する
+  const log = (Array.isArray(m.log) ? m.log : [])
+    .filter(e => e && e.d)
+    .map(e => ({
+      d: String(e.d),
+      rolls: e.rolls != null
+        ? Math.max(0, num(e.rolls))
+        : (weightPerRoll > 0 ? Math.max(0, num(e.kg)) / weightPerRoll : 0),
+    }));
 
   return {
     id: m.id || uid(),
@@ -1008,13 +1063,13 @@ function normalize(m) {
     rolls,
     weightPerRoll,
     totalKg,
-    producedKg: Math.max(0, num(m.producedKg)),
+    producedRolls,
+    producedKg,
     lossPct: m.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(m.lossPct)),
     ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
     ordered: { f: Math.max(0, num(o.f)), m: Math.max(0, num(o.m)), b: Math.max(0, num(o.b)) },
-    log: Array.isArray(m.log)
-      ? m.log.filter(e => e && e.d).map(e => ({ d: String(e.d), kg: num(e.kg) }))
-      : [],
+    counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
+    log,
   };
 }
 
@@ -1063,11 +1118,17 @@ function calc(m) {
     };
   }
 
+  const rolls = Math.max(0, num(m.rolls));
+  const producedRolls = Math.max(0, Math.min(rolls, num(m.producedRolls)));
+
   return {
     total,
     produced,
     remaining,
-    progress: total > 0 ? (produced / total) * 100 : 0,
+    rolls,
+    producedRolls,
+    remainRolls: Math.max(0, rolls - producedRolls),
+    progress: rolls > 0 ? (producedRolls / rolls) * 100 : 0,
     need,
     ratioSum: YARNS.reduce((s, y) => s + num(m.ratio[y.key]), 0),
   };
@@ -1089,7 +1150,8 @@ function renderSummary() {
 
   const today = todayStr();
   const todayKg = machines.reduce((s, m) =>
-    s + m.log.filter(e => e.d === today).reduce((t, e) => t + num(e.kg), 0), 0);
+    s + m.log.filter(e => e.d === today)
+          .reduce((t, e) => t + num(e.rolls) * num(m.weightPerRoll), 0), 0);
   const remainKg = machines.reduce((s, m) => s + calc(m).remaining, 0);
 
   document.getElementById("kpiUptime").innerHTML =
@@ -1128,12 +1190,13 @@ function cardHtml(m) {
     <span class="mrow">
       <span class="micro">output▶</span>
       <span class="bar out"><i style="width:${Math.min(100, c.progress)}%"></i></span>
-      <span class="val num">${fmt(c.produced, 0)}/${fmt(c.total, 0)}kg</span>
+      <span class="val num">${Math.round(c.producedRolls)}/${c.rolls}反</span>
     </span>
-    <span class="yarns">
+    <span class="micro" style="margin-top:8px;">yarn ／ 残り必要量</span>
+    <span class="yarns" style="margin-top:4px;">
       ${YARNS.map(y => `
         <span class="yarn-cell" style="--yc:${y.color}">
-          <span class="k">${y.label}糸 残</span>
+          <span class="k">${y.label}${(m.counts[y.key] || "").trim() ? " " + escapeHtml(m.counts[y.key].trim()) : "糸"}</span>
           <span class="v num">${fmt(c.need[y.key].rest)}<small>kg</small></span>
         </span>`).join("")}
     </span>` : "";
@@ -1242,7 +1305,12 @@ function formToMachine() {
     weightPerRoll: $("fWeight").value,
     // 重量が未入力の旧データは、保存済みの合計生産量を引き継ぐ
     totalKg: existing ? existing.totalKg : 0,
-    producedKg: $("fProduced").value,
+    producedRolls: $("fProduced").value,
+    counts: {
+      f: $("fCountF").value.trim(),
+      m: $("fCountM").value.trim(),
+      b: $("fCountB").value.trim(),
+    },
     lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
     ratio: { f: $("fRatioF").value, m: $("fRatioM").value, b: $("fRatioB").value },
     ordered: { f: $("fOrdF").value, m: $("fOrdM").value, b: $("fOrdB").value },
@@ -1267,25 +1335,45 @@ function fillForm(m) {
   $("fOrdF").value = m.ordered.f || "";
   $("fOrdM").value = m.ordered.m || "";
   $("fOrdB").value = m.ordered.b || "";
-  syncSlider(m.totalKg, m.producedKg);
+  $("fCountF").value = m.counts.f;
+  $("fCountM").value = m.counts.m;
+  $("fCountB").value = m.counts.b;
+  syncSlider(m.rolls, m.producedRolls);
 }
 
-// スライダーの上限を合計生産量に合わせる
-function syncSlider(totalKg, producedKg) {
+// スライダーは反数で動かす。上限は登録された反数
+function syncSlider(rolls, producedRolls) {
   const slider = $("fProduced");
-  const max = Math.max(0, num(totalKg));
-  slider.max = max > 0 ? max : 100;
+  const max = Math.max(0, Math.round(num(rolls)));
+  slider.max = max > 0 ? max : 1;
   slider.disabled = max <= 0;
-  slider.value = Math.max(0, Math.min(max, num(producedKg)));
-  $("liftMax").textContent = fmt(max, 0);
+  slider.value = Math.max(0, Math.min(max, Math.round(num(producedRolls))));
+  $("liftMax").textContent = `${max}反`;
+}
+
+// 入力済みの番手をプルダウンの候補にする
+function renderCountOptions() {
+  const set = new Set();
+  for (const mm of machines) {
+    for (const y of YARNS) {
+      const v = (mm.counts[y.key] || "").trim();
+      if (v) set.add(v);
+    }
+  }
+  $("countList").innerHTML = [...set]
+    .sort((a, b) => a.localeCompare(b, "ja", { numeric: true }))
+    .map(v => `<option value="${escapeHtml(v)}"></option>`)
+    .join("");
 }
 
 function renderCalcPanel() {
   const m = formToMachine();
   const c = calc(m);
 
-  $("liftValue").innerHTML = `${fmt(c.produced)}<small> kg</small>`;
-  $("liftRest").textContent = fmt(c.remaining);
+  $("liftValue").innerHTML = `${Math.round(c.producedRolls)}<small> 反</small>`;
+  $("liftRest").textContent = Math.round(c.remainRolls);
+  $("liftKg").textContent = `${fmt(c.produced)} kg`;
+  $("liftRestKg").textContent = `残り ${fmt(c.remaining)} kg`;
   $("cRemain").textContent = `${fmt(c.remaining)} kg`;
 
   $("cTotal").textContent = `${fmt(c.total)} kg`;
@@ -1300,9 +1388,10 @@ function renderCalcPanel() {
     const diffTxt = hasOrder
       ? `<span class="${diffCls}">${n.diff >= 0 ? "+" : ""}${fmt(n.diff)}</span>`
       : "–";
+    const cnt = (m.counts[y.key] || "").trim();
     return `
       <tr>
-        <td><span class="yname" style="--yc:${y.color}">${y.label}糸</span></td>
+        <td><span class="yname" style="--yc:${y.color}">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span></td>
         <td class="num">${fmt(n.all)}</td>
         <td class="num">${fmt(n.rest)}</td>
         <td class="num">${diffTxt}</td>
@@ -1336,10 +1425,11 @@ function renderLog() {
     return;
   }
 
+  const w = num(m.weightPerRoll);
   box.innerHTML = log.slice(0, 8).map((e, i) => `
     <div class="log-item">
       <span class="d num">${escapeHtml(e.d)}</span>
-      <span class="kg num">${fmt(e.kg)} kg</span>
+      <span class="kg num">${Math.round(e.rolls)}反${w > 0 ? ` / ${fmt(e.rolls * w)}kg` : ""}</span>
       <button type="button" data-idx="${i}" aria-label="この記録を削除">×</button>
     </div>`).join("");
 
@@ -1355,7 +1445,8 @@ function openEditSheet(id) {
   $("editTitle").textContent = m ? `${m.no}号機` : "機械を追加";
   fillForm(m || normalize({ status: "idle", lossPct: DEFAULT_LOSS }));
   $("btnDelete").hidden = !m;
-  $("qKg").value = "";
+  $("qRolls").value = "";
+  renderCountOptions();
   $("liftSec").style.opacity = m ? "1" : "0.6";
 
   renderCalcPanel();
@@ -1376,10 +1467,11 @@ function closeEditSheet() {
 [
   "fUptime", "fSku", "fRolls", "fWeight", "fLoss",
   "fRatioF", "fRatioM", "fRatioB", "fOrdF", "fOrdM", "fOrdB",
+  "fCountF", "fCountM", "fCountB",
 ].forEach(id => $(id).addEventListener("input", () => {
   // 反数か重量が変われば合計生産量が変わるので、スライダーの上限も合わせる
   if (id === "fRolls" || id === "fWeight") {
-    syncSlider(formToMachine().totalKg, $("fProduced").value);
+    syncSlider($("fRolls").value, $("fProduced").value);
   }
   renderCalcPanel();
 }));
@@ -1389,26 +1481,29 @@ $("fProduced").addEventListener("input", renderCalcPanel);
 /* ---- 水揚げの記録（即時保存） ---- */
 $("qAdd").addEventListener("click", () => {
   if (!editingId) { showToast("先に保存してください", true); return; }
-  const kg = num($("qKg").value);
-  if (!(kg > 0)) { showToast("水揚げ量を入力してください", true); return; }
+  const rolls = Math.round(num($("qRolls").value));
+  if (!(rolls > 0)) { showToast("水揚げの反数を入力してください", true); return; }
 
   const i = machines.findIndex(x => x.id === editingId);
   if (i < 0) return;
 
   const m = machines[i];
-  const total = num(m.totalKg);
-  m.producedKg = total > 0
-    ? Math.min(total, num(m.producedKg) + kg)
-    : num(m.producedKg) + kg;
-  m.log.unshift({ d: todayStr(), kg });
+  const added = m.rolls > 0
+    ? Math.min(m.rolls - m.producedRolls, rolls)
+    : rolls;
+  if (added <= 0) { showToast("すでに全反数の水揚げが済んでいます", true); return; }
+
+  m.producedRolls += added;
+  m.producedKg = m.producedRolls * num(m.weightPerRoll);
+  m.log.unshift({ d: todayStr(), rolls: added });
 
   if (saveMachines()) {
-    $("qKg").value = "";
-    syncSlider(m.totalKg, m.producedKg);
+    $("qRolls").value = "";
+    syncSlider(m.rolls, m.producedRolls);
     renderCalcPanel();
     renderLog();
     renderAll();
-    showToast(`${fmt(kg)}kg を記録しました`);
+    showToast(`${added}反 を記録しました`);
   }
 });
 
@@ -1418,13 +1513,14 @@ function removeLogEntry(idx) {
   const m = machines[i];
   const entry = m.log[idx];
   if (!entry) return;
-  if (!confirm(`${entry.d} の ${fmt(entry.kg)}kg の記録を削除しますか？`)) return;
+  if (!confirm(`${entry.d} の ${Math.round(entry.rolls)}反 の記録を削除しますか？`)) return;
 
   m.log.splice(idx, 1);
-  m.producedKg = Math.max(0, num(m.producedKg) - num(entry.kg));
+  m.producedRolls = Math.max(0, num(m.producedRolls) - num(entry.rolls));
+  m.producedKg = m.producedRolls * num(m.weightPerRoll);
 
   if (saveMachines()) {
-    syncSlider(m.totalKg, m.producedKg);
+    syncSlider(m.rolls, m.producedRolls);
     renderCalcPanel();
     renderLog();
     renderAll();
