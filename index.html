@@ -211,7 +211,59 @@
   }
 
   /* ---------------- 一覧 ---------------- */
+  .searchrow { display: flex; gap: 6px; }
+  .searchrow .search { flex: 1; min-width: 0; }
+  .viewtoggle {
+    flex: none; width: 46px;
+    border: none; cursor: pointer;
+    background: rgba(20, 23, 27, 0.86);
+    color: var(--on-char);
+    box-shadow: var(--lift);
+    display: grid; place-items: center; gap: 2px;
+  }
+  .viewtoggle .vi { width: 15px; height: 11px; background: currentColor; }
+  .viewtoggle .vl { font-size: 8px; font-weight: 700; letter-spacing: 0.04em; }
+  /* カード表示のときは一覧アイコン、一覧表示のときはカードアイコンを出す */
+  .vi-list { clip-path: polygon(0 0,100% 0,100% 18%,0 18%,0 41%,100% 41%,100% 59%,0 59%,0 82%,100% 82%,100% 100%,0 100%); }
+  .vi-card { clip-path: polygon(0 0,100% 0,100% 42%,0 42%,0 58%,100% 58%,100% 100%,0 100%); }
+
   main { padding: 4px 12px 12px; display: grid; gap: 8px; }
+  main.compact { gap: 3px; }
+
+  /* コンパクトな一覧行 */
+  .lrow {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; text-align: left; cursor: pointer;
+    background: var(--panel);
+    border: none; border-left: 3px solid var(--st, var(--st-idle));
+    box-shadow: var(--lift);
+    padding: 8px 10px;
+  }
+  .lrow:active { background: rgba(228, 228, 226, 0.95); }
+  .lrow .no { font-size: 14px; font-weight: 800; flex: none; min-width: 2.4em; }
+  .lrow .tg {
+    flex: none; font-size: 9px; font-weight: 700; color: #fff;
+    background: var(--st); padding: 2px 5px; line-height: 1.3;
+  }
+  .lrow .sku {
+    font-size: 12px; font-weight: 700; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .lrow .pg {
+    margin-left: auto; flex: none; display: flex; align-items: center; gap: 6px;
+  }
+  .lrow .pg .b { width: 42px; height: 4px; background: var(--panel-in-2); }
+  .lrow .pg .b i { display: block; height: 100%; background: var(--accent); }
+  .lrow .pg .t { font-size: 10px; font-weight: 700; color: var(--ink-2); min-width: 4.2em; text-align: right; }
+  .lrow .due { flex: none; font-size: 10px; font-weight: 700; color: var(--ink-2); min-width: 4.2em; text-align: right; }
+  .lrow .due.soon { color: #a86f0f; }
+  .lrow .due.overdue { color: var(--danger); }
+
+  .morebtn {
+    width: 100%; margin-top: 8px; padding: 8px;
+    border: 1px solid var(--line-2); background: transparent;
+    color: var(--ink-2); font-size: 11px; font-weight: 700; cursor: pointer;
+  }
   .count-line {
     font-size: 9px; letter-spacing: 0.11em; color: rgba(255, 255, 255, 0.72);
     font-weight: 600; padding: 2px 1px;
@@ -916,7 +968,13 @@
 </header>
 
 <div class="toolbar" id="toolbar">
-  <input class="search" id="search" type="search" placeholder="号機・品番・機種で検索" autocomplete="off">
+  <div class="searchrow">
+    <input class="search" id="search" type="search" placeholder="号機・品番・機種で検索" autocomplete="off">
+    <button class="viewtoggle" id="viewToggle" type="button" aria-label="表示を切り替える">
+      <span class="vi vi-list" id="viewIcon"></span>
+      <span class="vl" id="viewLabel">一覧</span>
+    </button>
+  </div>
   <div class="chips" id="chips"></div>
 </div>
 
@@ -1330,8 +1388,12 @@ const YARNS = [
 
 const DEFAULT_LOSS = 3;
 
+const VIEW_KEY = "factory-list-mode";
+
 let machines = [];
 let filterStatus = "all";
+let listMode = "card";   // "card" | "compact"
+let histAll = false;     // 履歴をすべて表示するか
 let query = "";
 let editingId = null; // null = 新規追加
 
@@ -1695,9 +1757,32 @@ function cardHtml(m) {
     </button>`;
 }
 
+// コンパクトな1行表示
+function rowHtml(m) {
+  const st = STATUS[m.status] || STATUS.idle;
+  const c = calc(m);
+  const days = daysUntil(m.nextChange);
+  const dueCls = days === null ? "" : days < 0 ? "overdue" : days <= 7 ? "soon" : "";
+  const dueTxt = days === null ? "—"
+    : days < 0 ? `${-days}日超過` : days === 0 ? "今日" : `あと${days}日`;
+
+  return `
+    <button class="lrow" type="button" data-id="${escapeHtml(m.id)}" style="--st:${st.color}">
+      <span class="no">${escapeHtml(m.no)}</span>
+      <span class="tg">${st.label}</span>
+      <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+      <span class="pg">
+        <span class="b"><i style="width:${Math.min(100, c.progress)}%"></i></span>
+        <span class="t num">${m.rolls > 0 ? `${Math.round(c.producedRolls)}/${m.rolls}反` : "—"}</span>
+      </span>
+      <span class="due ${dueCls}">${dueTxt}</span>
+    </button>`;
+}
+
 function renderList() {
   const list = document.getElementById("list");
   const items = filteredMachines();
+  list.classList.toggle("compact", listMode === "compact");
 
   if (machines.length === 0) {
     list.innerHTML = `
@@ -1717,12 +1802,26 @@ function renderList() {
 
   list.innerHTML =
     `<div class="count-line">${items.length} / ${machines.length} units</div>`
-    + items.map(cardHtml).join("");
+    + items.map(listMode === "compact" ? rowHtml : cardHtml).join("");
 
-  list.querySelectorAll(".card").forEach(card => {
-    card.addEventListener("click", () => openEditSheet(card.dataset.id));
+  list.querySelectorAll(".card, .lrow").forEach(el => {
+    el.addEventListener("click", () => openEditSheet(el.dataset.id));
   });
 }
+
+/* ---- カード表示とコンパクト表示の切り替え ---- */
+function applyViewToggle() {
+  const toCompact = listMode !== "compact"; // 押したときに切り替わる先
+  document.getElementById("viewIcon").className = "vi " + (toCompact ? "vi-list" : "vi-card");
+  document.getElementById("viewLabel").textContent = toCompact ? "一覧" : "カード";
+}
+
+document.getElementById("viewToggle").addEventListener("click", () => {
+  listMode = listMode === "compact" ? "card" : "compact";
+  try { localStorage.setItem(VIEW_KEY, listMode); } catch (e) { /* 保存できなくても表示は切り替える */ }
+  applyViewToggle();
+  renderList();
+});
 
 function renderChips() {
   const defs = [["all", "すべて"]].concat(
@@ -2285,7 +2384,8 @@ function renderHistory() {
     return;
   }
 
-  box.innerHTML = hist.slice(0, 6).map(h => {
+  const shown = histAll ? hist : hist.slice(0, 6);
+  box.innerHTML = shown.map(h => {
     const period = [h.startDate, h.closedAt].filter(Boolean).map(mdLabel).join(" − ");
     return `
       <div class="hist-item">
@@ -2295,6 +2395,16 @@ function renderHistory() {
         <span class="res num">${Math.round(num(h.producedRolls))}/${Math.round(num(h.rolls))}反</span>
       </div>`;
   }).join("");
+
+  if (hist.length > 6) {
+    box.innerHTML += `<button class="morebtn" type="button" id="histMore">`
+      + (histAll ? "最近の6件だけ表示" : `すべて表示（全${hist.length}件）`)
+      + `</button>`;
+    $("histMore").addEventListener("click", () => {
+      histAll = !histAll;
+      renderHistory();
+    });
+  }
 }
 
 function openEditSheet(id) {
@@ -2305,6 +2415,7 @@ function openEditSheet(id) {
   fillForm(m || normalize({ status: "idle", lossPct: DEFAULT_LOSS }));
   $("btnDelete").hidden = !m;
   $("qRolls").value = "";
+  histAll = false;
   renderCountOptions();
   $("liftSec").style.opacity = m ? "1" : "0.6";
 
@@ -2579,7 +2690,13 @@ function showToast(msg, isError) {
   toastTimer = setTimeout(() => t.classList.remove("show"), isError ? 4500 : 2200);
 }
 
+try {
+  const saved = localStorage.getItem(VIEW_KEY);
+  if (saved === "compact" || saved === "card") listMode = saved;
+} catch (e) { /* 読めなければ既定のカード表示 */ }
+
 machines = loadMachines();
+applyViewToggle();
 renderAll();
 </script>
 
