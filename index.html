@@ -750,10 +750,15 @@
             <input id="fRolls" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
           </div>
           <div class="field">
-            <label for="fTotalKg">生産量kg</label>
-            <input id="fTotalKg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+            <label for="fWeight">重量kg</label>
+            <input id="fWeight" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
           </div>
         </div>
+        <div class="calc-row" style="margin-top:10px; padding-top:9px; border-top:1px solid var(--line);">
+          <span class="k">合計生産量</span>
+          <span class="v num" id="cTotal">0.0 kg</span>
+        </div>
+        <p class="hint" id="totalHint">重量（1反あたり）× 反数で自動計算します。</p>
       </div>
     </div>
 
@@ -979,6 +984,18 @@ function dueText(days) {
 function normalize(m) {
   const r = m.ratio || {};
   const o = m.ordered || {};
+
+  // 合計生産量は「1反あたりの重量 × 反数」で決まる。
+  // 重量を持たない旧データは、合計生産量から重量を逆算して移行する。
+  const rolls = Math.max(0, Math.round(num(m.rolls)));
+  let weightPerRoll = Math.max(0, num(m.weightPerRoll));
+  let totalKg = Math.max(0, num(m.totalKg));
+  if (weightPerRoll > 0) {
+    totalKg = rolls * weightPerRoll;
+  } else if (totalKg > 0 && rolls > 0) {
+    weightPerRoll = totalKg / rolls;
+  }
+
   return {
     id: m.id || uid(),
     no: String(m.no ?? ""),
@@ -988,8 +1005,9 @@ function normalize(m) {
     uptime: Math.max(0, Math.min(100, Math.round(num(m.uptime)))),
     nextChange: m.nextChange || "",
     note: m.note || "",
-    rolls: Math.max(0, Math.round(num(m.rolls))),
-    totalKg: Math.max(0, num(m.totalKg)),
+    rolls,
+    weightPerRoll,
+    totalKg,
     producedKg: Math.max(0, num(m.producedKg)),
     lossPct: m.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(m.lossPct)),
     ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
@@ -1210,6 +1228,7 @@ const $ = id => document.getElementById(id);
 
 // フォームの現在値から仮の機械オブジェクトを作る（プレビュー計算用）
 function formToMachine() {
+  const existing = editingId ? machines.find(x => x.id === editingId) : null;
   return normalize({
     id: editingId || "preview",
     no: $("fNo").value.trim(),
@@ -1220,7 +1239,9 @@ function formToMachine() {
     nextChange: $("fNext").value,
     note: $("fNote").value.trim(),
     rolls: $("fRolls").value,
-    totalKg: $("fTotalKg").value,
+    weightPerRoll: $("fWeight").value,
+    // 重量が未入力の旧データは、保存済みの合計生産量を引き継ぐ
+    totalKg: existing ? existing.totalKg : 0,
     producedKg: $("fProduced").value,
     lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
     ratio: { f: $("fRatioF").value, m: $("fRatioM").value, b: $("fRatioB").value },
@@ -1238,7 +1259,7 @@ function fillForm(m) {
   $("fNext").value = m.nextChange;
   $("fNote").value = m.note;
   $("fRolls").value = m.rolls || "";
-  $("fTotalKg").value = m.totalKg || "";
+  $("fWeight").value = m.weightPerRoll ? Math.round(m.weightPerRoll * 100) / 100 : "";
   $("fLoss").value = m.lossPct;
   $("fRatioF").value = m.ratio.f || "";
   $("fRatioM").value = m.ratio.m || "";
@@ -1266,6 +1287,11 @@ function renderCalcPanel() {
   $("liftValue").innerHTML = `${fmt(c.produced)}<small> kg</small>`;
   $("liftRest").textContent = fmt(c.remaining);
   $("cRemain").textContent = `${fmt(c.remaining)} kg`;
+
+  $("cTotal").textContent = `${fmt(c.total)} kg`;
+  $("totalHint").textContent = m.rolls > 0 && m.weightPerRoll > 0
+    ? `重量 ${fmt(m.weightPerRoll, 2)}kg × ${m.rolls}反 = ${fmt(c.total)}kg`
+    : "重量（1反あたり）× 反数で自動計算します。";
 
   $("cBody").innerHTML = YARNS.map(y => {
     const n = c.need[y.key];
@@ -1348,10 +1374,13 @@ function closeEditSheet() {
 
 // 入力のたびに計算パネルを更新する
 [
-  "fUptime", "fSku", "fRolls", "fTotalKg", "fLoss",
+  "fUptime", "fSku", "fRolls", "fWeight", "fLoss",
   "fRatioF", "fRatioM", "fRatioB", "fOrdF", "fOrdM", "fOrdB",
 ].forEach(id => $(id).addEventListener("input", () => {
-  if (id === "fTotalKg") syncSlider($("fTotalKg").value, $("fProduced").value);
+  // 反数か重量が変われば合計生産量が変わるので、スライダーの上限も合わせる
+  if (id === "fRolls" || id === "fWeight") {
+    syncSlider(formToMachine().totalKg, $("fProduced").value);
+  }
   renderCalcPanel();
 }));
 
