@@ -594,24 +594,30 @@
     box-shadow: var(--lift);
     overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
-  .ginner { position: relative; }
+  /* 行を中身の幅まで広げる。これをしないと sticky の効く範囲が
+     可視幅で終わり、号機列がスクロールで流れてしまう */
+  .ginner { position: relative; width: max-content; min-width: 100%; }
   .grow {
     display: flex; align-items: stretch;
     border-bottom: 1px solid var(--line);
     min-height: 38px;
+    width: max-content; min-width: 100%;
   }
   .grow:last-child { border-bottom: none; }
   .ghead { min-height: 30px; background: var(--panel-in-2); }
 
+  /* 号機・品番の列は横スクロールしても固定する。
+     バーや今日の縦線より必ず上に重ね、背景は透けないよう不透明にする */
   .glabel {
-    position: sticky; left: 0; z-index: 2;
+    position: sticky; left: 0; z-index: 5;
     width: 84px; flex: none;
-    background: var(--panel);
+    background: #ededeb;
     border-right: 1px solid var(--line-2);
+    box-shadow: 3px 0 7px rgba(0, 0, 0, 0.13);
     padding: 5px 7px;
     display: grid; align-content: center; gap: 1px;
   }
-  .ghead .glabel { background: #e3e3e1; }
+  .ghead .glabel { background: #e3e3e1; z-index: 6; }
   .glabel .n { font-size: 13px; font-weight: 800; line-height: 1.1; }
   .glabel .s {
     font-size: 9px; color: var(--ink-2); font-weight: 600;
