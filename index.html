@@ -25,8 +25,6 @@
 
     /* 背景（ステージ） */
     --stage:    #22262b;
-    --stage-2:  #313740;
-    --stage-3:  #171a1e;
 
     /* 浮かぶパネル */
     --panel:      rgba(238, 238, 236, 0.95);
@@ -65,22 +63,36 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
+  html {
+    -webkit-text-size-adjust: 100%;
+    background-color: var(--stage); /* 画像が読めない場合の下地 */
+  }
 
   body {
+    position: relative;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
     color: var(--ink);
     padding-bottom: calc(104px + env(safe-area-inset-bottom));
     -webkit-font-smoothing: antialiased;
+    background: transparent;
+  }
 
-    /* ぼかした背景を模したステージ */
-    background-color: var(--stage);
+  /* ぼかした施設内観の背景。iOS では background-attachment:fixed が
+     不安定なため、固定レイヤーとして敷く */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
     background-image:
-      radial-gradient(120% 60% at 18% 0%, rgba(120, 145, 175, 0.30) 0%, transparent 62%),
-      radial-gradient(90% 50% at 100% 22%, rgba(90, 110, 135, 0.24) 0%, transparent 66%),
-      radial-gradient(140% 70% at 50% 108%, rgba(12, 14, 17, 0.85) 0%, transparent 70%),
-      linear-gradient(180deg, var(--stage-2) 0%, var(--stage) 46%, var(--stage-3) 100%);
-    background-attachment: fixed;
+      linear-gradient(180deg,
+        rgba(20, 25, 31, 0.52) 0%,
+        rgba(20, 25, 31, 0.38) 42%,
+        rgba(14, 18, 23, 0.58) 100%),
+      url("bg.jpg");
+    background-size: cover, cover;
+    background-position: center center, center center;
+    background-repeat: no-repeat, no-repeat;
   }
 
   button, input, select, textarea { font: inherit; color: inherit; }
@@ -97,17 +109,15 @@
   }
   .num { font-variant-numeric: tabular-nums; }
 
-  /* 浮かぶ明るいパネル */
-  .panel {
-    background: var(--panel);
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    box-shadow: var(--lift);
-  }
-
   /* ---------------- ヘッダー ---------------- */
   header {
-    padding: 10px 12px 12px;
+    padding: 10px 12px 14px;
     padding-top: max(10px, env(safe-area-inset-top));
+    /* 上部の暗い帯。白文字と背景画像のコントラストを確保する */
+    background: linear-gradient(180deg,
+      rgba(16, 20, 25, 0.86) 0%,
+      rgba(16, 20, 25, 0.72) 62%,
+      rgba(16, 20, 25, 0.10) 100%);
   }
   .topbar { display: flex; align-items: center; gap: 8px; }
   .topbar .home {
@@ -201,8 +211,9 @@
   /* ---------------- 一覧 ---------------- */
   main { padding: 4px 12px 12px; display: grid; gap: 8px; }
   .count-line {
-    font-size: 9px; letter-spacing: 0.11em; color: rgba(255, 255, 255, 0.45);
+    font-size: 9px; letter-spacing: 0.11em; color: rgba(255, 255, 255, 0.72);
     font-weight: 600; padding: 2px 1px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 
   .card {
