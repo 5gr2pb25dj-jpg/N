@@ -263,6 +263,10 @@
     font-size: 11px; font-weight: 700; color: #fff; background: var(--char);
     padding: 2px 6px;
   }
+  .skuline .nextsku {
+    font-size: 10px; font-weight: 700; color: var(--ink-2);
+    border: 1px solid var(--line-2); padding: 1px 5px;
+  }
   .skuline .due { margin-left: auto; font-size: 11px; color: var(--ink-2); font-weight: 600; }
   .due.soon    { color: #a86f0f; font-weight: 700; }
   .due.overdue { color: var(--danger); font-weight: 700; }
@@ -645,6 +649,19 @@
     font-size: 9px; font-weight: 700; color: var(--ink-2);
     white-space: nowrap; padding-left: 4px;
   }
+  /* 次のオーダー（枠線だけのバー） */
+  .gnext {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    height: 15px;
+    border: 1px solid var(--char);
+    background: repeating-linear-gradient(45deg,
+      rgba(58, 62, 68, 0.14) 0 4px, transparent 4px 8px);
+    display: flex; align-items: center; overflow: hidden;
+  }
+  .gnext-t {
+    font-size: 8.5px; font-weight: 700; color: var(--ink-2);
+    padding: 0 3px; white-space: nowrap;
+  }
   .gnote {
     margin-top: 8px; font-size: 10px; color: rgba(255, 255, 255, 0.62);
     line-height: 1.7; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -1024,6 +1041,101 @@
       </div>
     </div>
 
+    <!-- 次のオーダー -->
+    <div class="sec">
+      <div class="sec-l"><h3>次の<br>品番</h3><span class="micro">next</span></div>
+      <div class="sec-r">
+        <div class="grid3">
+          <div class="field">
+            <label for="nSku">品番</label>
+            <input id="nSku" placeholder="EF-9012">
+          </div>
+          <div class="field">
+            <label for="nRolls">反数</label>
+            <input id="nRolls" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="nWeight">重量kg</label>
+            <input id="nWeight" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
+        </div>
+        <div class="grid2" style="margin-top:9px;">
+          <div class="field">
+            <label for="nStart">開始日</label>
+            <input id="nStart" type="date">
+          </div>
+          <div class="field">
+            <label for="nEnd">完了予定日</label>
+            <input id="nEnd" type="date">
+          </div>
+        </div>
+
+        <p class="micro" style="margin:12px 0 6px;">yarn count ／ 番手</p>
+        <div class="grid3">
+          <div class="field">
+            <label for="nCountF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
+            <input id="nCountF" list="countList" placeholder="30/1" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="nCountM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
+            <input id="nCountM" list="countList" placeholder="40/1" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="nCountB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
+            <input id="nCountB" list="countList" placeholder="30/1" autocomplete="off">
+          </div>
+        </div>
+
+        <p class="micro" style="margin:12px 0 6px;">blend ／ 交編率(%)</p>
+        <div class="grid3">
+          <div class="field">
+            <label for="nRatioF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
+            <input id="nRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="nRatioM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
+            <input id="nRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="nRatioB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
+            <input id="nRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+          </div>
+        </div>
+
+        <p class="micro" style="margin:12px 0 6px;">ordered ／ 発注糸量(kg)</p>
+        <div class="grid3">
+          <div class="field">
+            <label for="nOrdF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
+            <input id="nOrdF" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="nOrdM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
+            <input id="nOrdM" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="nOrdB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
+            <input id="nOrdB" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
+        </div>
+
+        <div class="calc-row" style="margin-top:11px; padding-top:9px; border-top:1px solid var(--line);">
+          <span class="k">合計生産量</span>
+          <span class="v num" id="nTotal">0.0 kg</span>
+        </div>
+        <div class="calc-table">
+          <table>
+            <thead><tr><th>糸</th><th>必要量</th><th>発注</th><th>差分</th></tr></thead>
+            <tbody id="nBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">次の品番の糸を先に手配するための必要量です。</p>
+
+        <button class="btn" type="button" id="btnPromote" style="margin-top:11px; width:100%;">
+          次の品番に切り替える
+        </button>
+      </div>
+    </div>
+
     <!-- 原糸必要量 -->
     <div class="sec">
       <div class="sec-l"><h3>原糸<br>必要量</h3><span class="micro">yarn</span></div>
@@ -1204,6 +1316,44 @@ function dueText(days) {
 /* ============================================================
    永続化（旧スキーマのデータも読めるように正規化する）
    ============================================================ */
+// 1件のオーダー（品番・反数・重量・期間・糸の設定）を整える
+function normalizeOrder(o) {
+  o = o || {};
+  const r = o.ratio || {};
+  const c = o.counts || {};
+  const od = o.ordered || {};
+  const rolls = Math.max(0, Math.round(num(o.rolls)));
+  const weightPerRoll = Math.max(0, num(o.weightPerRoll));
+  return {
+    sku: o.sku || "",
+    rolls,
+    weightPerRoll,
+    totalKg: rolls * weightPerRoll,
+    startDate: o.startDate || "",
+    endDate: o.endDate || "",
+    lossPct: o.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(o.lossPct)),
+    ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
+    counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
+    ordered: { f: Math.max(0, num(od.f)), m: Math.max(0, num(od.m)), b: Math.max(0, num(od.b)) },
+  };
+}
+
+// 生産量に対する表・中・裏の必要糸量
+function yarnNeed(totalKg, remainKg, ratio, lossPct, ordered) {
+  const lossFactor = 1 + num(lossPct) / 100;
+  const need = {};
+  for (const y of YARNS) {
+    const r = num(ratio[y.key]) / 100;
+    const all = totalKg * r * lossFactor;
+    need[y.key] = {
+      all,
+      rest: remainKg * r * lossFactor,
+      diff: num(ordered[y.key]) - all, // 発注 − 全体必要（＋なら余剰、−なら不足）
+    };
+  }
+  return need;
+}
+
 function normalize(m) {
   const r = m.ratio || {};
   const o = m.ordered || {};
@@ -1261,6 +1411,8 @@ function normalize(m) {
     ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
     ordered: { f: Math.max(0, num(o.f)), m: Math.max(0, num(o.m)), b: Math.max(0, num(o.b)) },
     counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
+    next: normalizeOrder(m.next),
+    history: Array.isArray(m.history) ? m.history : [],
     log,
   };
 }
@@ -1296,19 +1448,8 @@ function calc(m) {
   const total = Math.max(0, num(m.totalKg));
   const produced = Math.max(0, Math.min(total, num(m.producedKg)));
   const remaining = Math.max(0, total - produced);
-  const lossFactor = 1 + num(m.lossPct) / 100;
 
-  const need = {};
-  for (const y of YARNS) {
-    const ratio = num(m.ratio[y.key]) / 100;
-    const all = total * ratio * lossFactor;
-    const rest = remaining * ratio * lossFactor;
-    need[y.key] = {
-      all,
-      rest,
-      diff: num(m.ordered[y.key]) - all, // 発注 − 全体必要（＋なら余剰、−なら不足）
-    };
-  }
+  const need = yarnNeed(total, remaining, m.ratio, m.lossPct, m.ordered);
 
   const rolls = Math.max(0, num(m.rolls));
   const producedRolls = Math.max(0, Math.min(rolls, num(m.producedRolls)));
@@ -1434,6 +1575,7 @@ function cardHtml(m) {
         <span class="skuline">
           <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
           ${m.rolls > 0 ? `<span class="rolls num">${m.rolls}反</span>` : ""}
+          ${m.next.sku ? `<span class="nextsku">次 ${escapeHtml(m.next.sku)}</span>` : ""}
           ${days !== null ? `<span class="due ${dueCls}">${dueText(days)}</span>` : ""}
         </span>
         <span class="mrow">
@@ -1587,9 +1729,10 @@ function renderHome() {
       ${homeRows(week.slice(0, 6), ({ m }) => {
         const d = daysUntil(m.nextChange);
         const st = STATUS[m.status] || STATUS.idle;
+        const nx = m.next.sku ? ` → ${escapeHtml(m.next.sku)}` : "";
         return `<button class="hrow" type="button" data-id="${escapeHtml(m.id)}" style="--hc:${st.color}">
           <span class="no">${escapeHtml(m.no)}</span>
-          <span class="txt">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+          <span class="txt">${m.sku ? escapeHtml(m.sku) : "品番未設定"}${nx}</span>
           <span class="val">${d === 0 ? "今日" : `あと${d}日`}</span>
         </button>`;
       })}
@@ -1621,7 +1764,7 @@ const DAY_PX = 13; // 1日あたりの幅
 function renderGantt() {
   const box = document.getElementById("gantt");
   const items = machines
-    .filter(m => m.rolls > 0 || m.startDate || m.nextChange)
+    .filter(m => m.rolls > 0 || m.startDate || m.nextChange || m.next.sku || m.next.startDate)
     .sort(compareNo)
     .map(m => ({ m, c: calc(m) }));
 
@@ -1640,7 +1783,7 @@ function renderGantt() {
   // 表示範囲を決める。開始日・予定日・予測日をすべて含める
   let min = today, max = today;
   for (const { m, c } of items) {
-    for (const d of [m.startDate, m.nextChange, c.projected]) {
+    for (const d of [m.startDate, m.nextChange, c.projected, m.next.startDate, m.next.endDate]) {
       if (!d) continue;
       if (d < min) min = d;
       if (d > max) max = d;
@@ -1689,6 +1832,19 @@ function renderGantt() {
       labelX = px; // ラベルは点線の先に置き、重ならないようにする
     }
 
+    // 次のオーダーを枠線のバーで並べる
+    let nextBar = "";
+    const n = m.next;
+    if (n.startDate || n.endDate) {
+      const ns = n.startDate || m.nextChange || end;
+      const ne = n.endDate || addDays(ns, 1);
+      const nx1 = xOf(ns);
+      const nx2 = Math.max(nx1 + DAY_PX, xOf(ne) + DAY_PX);
+      nextBar = `<span class="gnext" style="left:${nx1}px; width:${nx2 - nx1}px">`
+        + `<span class="gnext-t">${n.sku ? escapeHtml(n.sku) : "次"}</span></span>`;
+      labelX = Math.max(labelX, nx2);
+    }
+
     const label = c.delay != null && c.delay > 0
       ? `${Math.round(c.progress)}%・${c.delay}日遅れ`
       : `${Math.round(c.progress)}%`;
@@ -1705,6 +1861,7 @@ function renderGantt() {
             <i style="width:${Math.min(100, c.progress)}%"></i>
           </span>
           ${projBar}
+          ${nextBar}
           <span class="gbar-l" style="left:${labelX}px">${label}</span>
         </div>
       </div>`;
@@ -1723,8 +1880,9 @@ function renderGantt() {
     <div class="hcard" style="margin-top:8px;">
       <p class="hint">
         バーは<b>開始日から次回予定日</b>まで。塗りつぶしが<b>水揚げの進捗</b>、
-        赤い縦線が<b>今日</b>です。点線は<b>今のペースだと予定を超える見込み</b>の分を表します。
-        行をタップすると編集できます。
+        赤い縦線が<b>今日</b>です。赤い点線は<b>今のペースだと予定を超える見込み</b>、
+        斜線のバーは<b>次の品番の予定</b>を表します。
+        開いたときは今日が左端に来ます。行をタップすると編集できます。
       </p>
     </div>`;
 
@@ -1733,6 +1891,15 @@ function renderGantt() {
     row.style.cursor = "pointer";
     row.addEventListener("click", () => openFromRow(items[i - 1].m.id));
   });
+
+  // 今日が左端（固定されている号機列のすぐ右）に来るようスクロールする
+  const wrap = box.querySelector(".gwrap");
+  if (wrap) {
+    const to = Math.max(0, xOf(today) - 6);
+    requestAnimationFrame(() => {
+      wrap.scrollLeft = Math.min(to, wrap.scrollWidth - wrap.clientWidth);
+    });
+  }
 }
 
 /* ============================================================
@@ -1798,6 +1965,18 @@ function formToMachine() {
       m: $("fCountM").value.trim(),
       b: $("fCountB").value.trim(),
     },
+    next: {
+      sku: $("nSku").value.trim(),
+      rolls: $("nRolls").value,
+      weightPerRoll: $("nWeight").value,
+      startDate: $("nStart").value,
+      endDate: $("nEnd").value,
+      lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
+      ratio: { f: $("nRatioF").value, m: $("nRatioM").value, b: $("nRatioB").value },
+      counts: { f: $("nCountF").value.trim(), m: $("nCountM").value.trim(), b: $("nCountB").value.trim() },
+      ordered: { f: $("nOrdF").value, m: $("nOrdM").value, b: $("nOrdB").value },
+    },
+    history: existing ? existing.history : [],
     lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
     ratio: { f: $("fRatioF").value, m: $("fRatioM").value, b: $("fRatioB").value },
     ordered: { f: $("fOrdF").value, m: $("fOrdM").value, b: $("fOrdB").value },
@@ -1826,6 +2005,23 @@ function fillForm(m) {
   $("fCountF").value = m.counts.f;
   $("fCountM").value = m.counts.m;
   $("fCountB").value = m.counts.b;
+
+  const n = m.next;
+  $("nSku").value = n.sku;
+  $("nRolls").value = n.rolls || "";
+  $("nWeight").value = n.weightPerRoll || "";
+  $("nStart").value = n.startDate;
+  $("nEnd").value = n.endDate;
+  $("nRatioF").value = n.ratio.f || "";
+  $("nRatioM").value = n.ratio.m || "";
+  $("nRatioB").value = n.ratio.b || "";
+  $("nCountF").value = n.counts.f;
+  $("nCountM").value = n.counts.m;
+  $("nCountB").value = n.counts.b;
+  $("nOrdF").value = n.ordered.f || "";
+  $("nOrdM").value = n.ordered.m || "";
+  $("nOrdB").value = n.ordered.b || "";
+
   syncSlider(m.rolls, m.producedRolls);
 }
 
@@ -1886,6 +2082,23 @@ function renderCalcPanel() {
       : "　予定どおり";
     $("projectedHint").textContent = `${pace}／${rest}${gap}`;
   }
+
+  // 次のオーダー
+  const n = m.next;
+  const nNeed = yarnNeed(n.totalKg, n.totalKg, n.ratio, n.lossPct, n.ordered);
+  $("nTotal").textContent = `${fmt(n.totalKg)} kg`;
+  $("nBody").innerHTML = YARNS.map(y => {
+    const nd = nNeed[y.key];
+    const has = num(n.ordered[y.key]) > 0;
+    const cls = nd.diff < -0.05 ? "short" : nd.diff > 0.05 ? "over" : "";
+    return `
+      <tr>
+        <td><span class="yname" style="--yc:${y.color}">${y.label}糸${(n.counts[y.key] || "").trim() ? " " + escapeHtml(n.counts[y.key].trim()) : ""}</span></td>
+        <td class="num">${fmt(nd.all)}</td>
+        <td class="num">${has ? fmt(num(n.ordered[y.key])) : "–"}</td>
+        <td class="num">${has ? `<span class="${cls}">${nd.diff >= 0 ? "+" : ""}${fmt(nd.diff)}</span>` : "–"}</td>
+      </tr>`;
+  }).join("");
 
   $("cBody").innerHTML = YARNS.map(y => {
     const n = c.need[y.key];
@@ -1974,6 +2187,9 @@ function closeEditSheet() {
   "fUptime", "fSku", "fRolls", "fWeight", "fLoss",
   "fRatioF", "fRatioM", "fRatioB", "fOrdF", "fOrdM", "fOrdB",
   "fCountF", "fCountM", "fCountB", "fStart", "fNext",
+  "nSku", "nRolls", "nWeight", "nStart", "nEnd",
+  "nRatioF", "nRatioM", "nRatioB", "nCountF", "nCountM", "nCountB",
+  "nOrdF", "nOrdM", "nOrdB",
 ].forEach(id => $(id).addEventListener("input", () => {
   // 反数か重量が変われば合計生産量が変わるので、スライダーの上限も合わせる
   if (id === "fRolls" || id === "fWeight") {
@@ -2065,6 +2281,57 @@ $("btnDelete").addEventListener("click", () => {
     closeEditSheet();
     renderAll();
     showToast("削除しました");
+  }
+});
+
+/* ---- 次の品番へ切り替える（現在のオーダーは履歴に残す） ---- */
+$("btnPromote").addEventListener("click", () => {
+  if (!editingId) { showToast("先に保存してください", true); return; }
+  const i = machines.findIndex(x => x.id === editingId);
+  if (i < 0) return;
+  const m = machines[i];
+
+  if (!m.next.sku && m.next.rolls === 0) {
+    showToast("次の品番が入力されていません", true);
+    return;
+  }
+  const msg = `現在の品番「${m.sku || "未設定"}」を終了し、`
+    + `「${m.next.sku || "次の品番"}」に切り替えます。\n`
+    + `現在の水揚げ記録は履歴に移動します。よろしいですか？`;
+  if (!confirm(msg)) return;
+
+  // 終わったオーダーを履歴に残す
+  m.history.unshift({
+    sku: m.sku, rolls: m.rolls, weightPerRoll: m.weightPerRoll,
+    startDate: m.startDate, endDate: m.nextChange,
+    producedRolls: m.producedRolls, closedAt: todayStr(),
+    log: m.log,
+  });
+
+  const n = m.next;
+  m.sku = n.sku;
+  m.rolls = n.rolls;
+  m.weightPerRoll = n.weightPerRoll;
+  m.totalKg = n.rolls * n.weightPerRoll;
+  m.startDate = n.startDate || todayStr();
+  m.nextChange = n.endDate;
+  m.lossPct = n.lossPct;
+  m.ratio = { ...n.ratio };
+  m.counts = { ...n.counts };
+  m.ordered = { ...n.ordered };
+  m.producedRolls = 0;
+  m.producedKg = 0;
+  m.log = [];
+  m.next = normalizeOrder({});
+  m.status = "changeover";
+
+  if (saveMachines()) {
+    fillForm(m);
+    renderCountOptions();
+    renderCalcPanel();
+    renderLog();
+    renderAll();
+    showToast(`${m.sku || "次の品番"} に切り替えました`);
   }
 });
 
