@@ -1161,6 +1161,30 @@
       </div>
     </div>
 
+    <!-- 原糸必要量 -->
+    <div class="sec">
+      <div class="sec-l"><h3>原糸<br>必要量</h3><span class="micro">this unit</span></div>
+      <div class="sec-r">
+        <div class="calc-row">
+          <span class="k">この号機の残り生産量（編残）</span>
+          <span class="v num" id="cRemain">0.0 kg</span>
+        </div>
+        <div class="calc-table">
+          <table>
+            <thead>
+              <tr><th>糸</th><th>全体必要</th><th>残り必要</th><th>発注差分</th></tr>
+            </thead>
+            <tbody id="cBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">
+          この号機ぶんの数量です。同じ品番を複数の号機で流している場合の合計は、
+          下のタブの「原糸」で確認できます。
+        </p>
+        <p class="formula" id="cFormula"></p>
+      </div>
+    </div>
+
     <!-- 水揚げ -->
     <div class="sec" id="liftSec">
       <div class="sec-l"><h3>水揚げ<br>記録</h3><span class="micro">output</span></div>
@@ -1289,26 +1313,6 @@
       <div class="sec-l"><h3>履歴</h3><span class="micro">past</span></div>
       <div class="sec-r">
         <div id="histBody"></div>
-      </div>
-    </div>
-
-    <!-- 原糸必要量 -->
-    <div class="sec">
-      <div class="sec-l"><h3>原糸<br>必要量</h3><span class="micro">this unit</span></div>
-      <div class="sec-r">
-        <div class="calc-row">
-          <span class="k">この号機の残り生産量（編残）</span>
-          <span class="v num" id="cRemain">0.0 kg</span>
-        </div>
-        <div class="calc-table">
-          <table>
-            <thead>
-              <tr><th>糸</th><th>全体必要</th><th>残り必要</th><th>発注差分</th></tr>
-            </thead>
-            <tbody id="cBody"></tbody>
-          </table>
-        </div>
-        <p class="formula" id="cFormula"></p>
       </div>
     </div>
 
