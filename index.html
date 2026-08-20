@@ -520,7 +520,7 @@
     </div>
     <div class="kpi" style="--kc:#c8871c">
       <span class="ic"></span>
-      <span class="tx"><span class="v num" id="kpiChange">–</span><span class="l">今週の段取り</span></span>
+      <span class="tx"><span class="v num" id="kpiChange">–</span><span class="l">今週の予定</span></span>
     </div>
   </div>
 
@@ -582,7 +582,7 @@
             <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
           </div>
           <div class="field">
-            <label for="fNext">次回段取り予定日</label>
+            <label for="fNext">次回予定日</label>
             <input id="fNext" type="date">
           </div>
         </div>
@@ -727,16 +727,16 @@
       <div class="sec-r">
         <div class="grid2">
           <div class="field">
-            <label for="bCount">台数 *</label>
+            <label for="bCount">号機 *</label>
             <input id="bCount" type="number" inputmode="numeric" min="1" max="200" step="1" required placeholder="50">
           </div>
           <div class="field">
-            <label for="bPrefix">号機の接頭辞</label>
-            <input id="bPrefix" placeholder="K-（空欄可）">
+            <label for="bModel">機種</label>
+            <input id="bModel" placeholder="福原 V-LEC4（空欄可）">
           </div>
         </div>
         <p class="hint" style="margin-top:7px;">
-          号機は「接頭辞＋連番（01, 02, …）」で採番し、既存の号機がある場合は続きの番号から作成します。初期状態は「計画停止」です。
+          指定した数だけ号機を連番（01, 02, …）で作成します。既存の号機がある場合は続きの番号から採番します。機種は作成する全号機に設定され、初期状態は「計画停止」です。
         </p>
       </div>
     </div>
@@ -811,7 +811,7 @@ function compareNo(a, b) {
   return String(a.no).localeCompare(String(b.no), "ja", { numeric: true });
 }
 
-// 次回段取り予定日までの日数（今日=0）。無効な日付は null
+// 次回予定日までの日数（今日=0）。無効な日付は null
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
@@ -825,9 +825,9 @@ function daysUntil(dateStr) {
 
 function dueText(days) {
   if (days === null) return "";
-  if (days < 0) return `段取り ${-days}日超過`;
-  if (days === 0) return "段取り 今日";
-  return `段取り あと${days}日`;
+  if (days < 0) return `予定 ${-days}日超過`;
+  if (days === 0) return "予定 今日";
+  return `予定 あと${days}日`;
 }
 
 /* ============================================================
@@ -1316,28 +1316,26 @@ function closeBulkSheet() {
 bulkSheet.addEventListener("submit", e => {
   e.preventDefault();
   const count = Math.round(num($("bCount").value));
-  const prefix = $("bPrefix").value.trim();
+  const model = $("bModel").value.trim();
   if (!count || count < 1) return;
 
-  // 同じ接頭辞の既存号機から最大の連番を探し、続きから採番する
+  // 既存の号機から最大の番号を探し、続きから採番する
   let start = 0;
   for (const m of machines) {
-    const no = String(m.no);
-    if (!no.startsWith(prefix)) continue;
-    const n = Number(no.slice(prefix.length));
+    const n = Number(String(m.no));
     if (Number.isInteger(n) && n > start) start = n;
   }
 
   for (let i = 1; i <= count; i++) {
     const numStr = String(start + i).padStart(2, "0");
-    machines.push(normalize({ id: uid(), no: prefix + numStr, status: "idle" }));
+    machines.push(normalize({ id: uid(), no: numStr, model, status: "idle" }));
   }
 
   if (saveMachines()) {
     closeBulkSheet();
     bulkSheet.reset();
     renderAll();
-    showToast(`${count}台を一括登録しました`);
+    showToast(`${count}号機を一括登録しました`);
   }
 });
 
