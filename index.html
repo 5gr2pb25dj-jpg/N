@@ -288,6 +288,20 @@
   .hrow .gpg .t { font-size: 10px; font-weight: 700; color: var(--ink-2); min-width: 4.4em; text-align: right; }
   .grow-row { border-left-color: var(--accent); }
 
+  /* 原糸タブのセクション見出し */
+  .ysec {
+    color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.03em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    margin: 6px 2px 2px;
+  }
+  .ysec .micro { color: rgba(255, 255, 255, 0.55); text-shadow: none; }
+  .ysec:first-child { margin-top: 0; }
+  .ctitle {
+    border: none; background: transparent; padding: 0; cursor: pointer;
+    font-size: 15px; font-weight: 800; color: var(--accent);
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+
   .morebtn {
     width: 100%; margin-top: 8px; padding: 8px;
     border: 1px solid var(--line-2); background: transparent;
@@ -2008,14 +2022,58 @@ function renderGroupOptions() {
    同じ品番を複数の号機で流すことがあるため、糸は品番単位でまとめる。
    進行中のオーダーと次のオーダーの両方を対象にする。
    ============================================================ */
+/* ============================================================
+   番手ごとの集計
+   糸は番手の単位で仕入れるため、品番やサイズ違いをまたいで
+   同じ番手はひとまとめにする。これが実際の手配単位になる。
+   ============================================================ */
+function aggregateByCount() {
+  const map = new Map();
+
+  const add = (o, no, totalKg, restKg, label) => {
+    const nd = yarnNeed(totalKg, restKg, o.ratio, o.lossPct, o.ordered, o.onHand);
+    for (const y of YARNS) {
+      const cnt = (o.counts[y.key] || "").trim();
+      if (!cnt) continue;
+      if (num(o.ratio[y.key]) <= 0) continue; // 使っていない糸は数えない
+      let e = map.get(cnt);
+      if (!e) {
+        e = { count: cnt, all: 0, rest: 0, ordered: 0, onHand: 0,
+              users: new Set(), positions: new Set() };
+        map.set(cnt, e);
+      }
+      e.all += nd[y.key].all;
+      e.rest += nd[y.key].rest;
+      e.ordered += num(o.ordered[y.key]);
+      e.onHand += nd[y.key].onHand;
+      e.positions.add(y.label);
+      e.users.add(`${no}${label} ${o.sku || "品番未設定"}`);
+    }
+  };
+
+  for (const m of machines) {
+    const c = calc(m);
+    add(m, m.no, c.total, c.remaining, "");
+    add(m.next, m.no, m.next.totalKg, m.next.totalKg, "（次）");
+  }
+
+  // 不足の大きい番手を先に出す
+  return [...map.values()].sort((a, b) => {
+    const ga = a.onHand - a.rest, gb = b.onHand - b.rest;
+    if (ga !== gb) return ga - gb;
+    return a.count.localeCompare(b.count, "ja", { numeric: true });
+  });
+}
+
 function aggregateBySku() {
   const map = new Map();
 
-  const entry = sku => {
-    let e = map.get(sku);
+  const entry = (key, isGroup) => {
+    let e = map.get(key);
     if (!e) {
       e = {
-        sku,
+        name: key, isGroup,
+        skus: new Set(),
         current: [], next: [],
         rolls: 0, doneRolls: 0, totalKg: 0, restKg: 0,
         need: {}, counts: {},
@@ -2024,14 +2082,20 @@ function aggregateBySku() {
         e.need[y.key] = { all: 0, rest: 0, ordered: 0, onHand: 0 };
         e.counts[y.key] = new Set();
       }
-      map.set(sku, e);
+      map.set(key, e);
     }
     return e;
   };
 
-  const add = (sku, o, kind, no, rolls, doneRolls, totalKg, restKg) => {
-    if (!sku) return;
-    const e = entry(sku);
+  // 案件が付いていればそれを単位にする。同じ品番のサイズ違い（口径違い）を
+  // 案件でまとめておけば、糸はまとめて計算される。
+  const add = (sku, o, kind, no, rolls, doneRolls, totalKg, restKg, group) => {
+    const g = (group || "").trim();
+    // 品番も反数も無いオーダー（未入力の「次」など）は数えない
+    if (!sku && !(rolls > 0)) return;
+    if (!sku && !g) return;
+    const e = entry(g || sku, !!g);
+    if (sku) e.skus.add(sku);
     e[kind].push(no);
     e.rolls += rolls;
     e.doneRolls += doneRolls;
@@ -2051,10 +2115,10 @@ function aggregateBySku() {
   for (const m of machines) {
     const c = calc(m);
     // 進行中のオーダー
-    add(m.sku, m, "current", m.no, m.rolls, c.producedRolls, c.total, c.remaining);
+    add(m.sku, m, "current", m.no, m.rolls, c.producedRolls, c.total, c.remaining, m.group);
     // 次のオーダー（未着手なので残り＝全体）
     const n = m.next;
-    add(n.sku, n, "next", m.no, n.rolls, 0, n.totalKg, n.totalKg);
+    add(n.sku, n, "next", m.no, n.rolls, 0, n.totalKg, n.totalKg, m.group);
   }
 
   // 不足の大きい品番を先に出す
@@ -2062,7 +2126,7 @@ function aggregateBySku() {
     const la = Math.min(...YARNS.map(y => a.need[y.key].ordered - a.need[y.key].all));
     const lb = Math.min(...YARNS.map(y => b.need[y.key].ordered - b.need[y.key].all));
     if (la !== lb) return la - lb;
-    return a.sku.localeCompare(b.sku, "ja", { numeric: true });
+    return a.name.localeCompare(b.name, "ja", { numeric: true });
   });
 }
 
@@ -2081,7 +2145,41 @@ function renderYarn() {
     return;
   }
 
-  box.innerHTML = list.map(e => {
+  // 番手ごと（実際の手配単位）
+  const counts = aggregateByCount();
+  const countCards = counts.map(e => {
+    const gap = e.onHand - e.rest;
+    const has = e.onHand > 0;
+    const cls = gap < -0.05 ? "short" : gap > 0.05 ? "over" : "";
+    const users = [...e.users];
+    return `
+      <div class="hcard">
+        <span class="micro">${escapeHtml([...e.positions].join("・"))}糸 ／ ${users.length}件で使用</span>
+        <h2><span class="bar"></span>
+          <button type="button" class="ylink ctitle" data-count="${escapeHtml(e.count)}">${escapeHtml(e.count)}</button>
+          ${has ? `<span class="n${gap < -0.05 ? " warn" : ""}">${gap >= 0 ? "+" : ""}${fmt(gap)}kg</span>` : ""}
+        </h2>
+        <div class="calc-table">
+          <table>
+            <thead><tr><th>残り必要</th><th>現在庫</th><th>過不足</th></tr></thead>
+            <tbody><tr>
+              <td class="num">${fmt(e.rest)}</td>
+              <td class="num">${has ? fmt(e.onHand) : "–"}</td>
+              <td class="num">${has ? `<span class="${cls}">${gap >= 0 ? "+" : ""}${fmt(gap)}</span>` : "–"}</td>
+            </tr></tbody>
+          </table>
+        </div>
+        <p class="hint">使用: ${escapeHtml(users.join(" ／ "))}</p>
+      </div>`;
+  }).join("");
+
+  const countSection = counts.length
+    ? `<p class="ysec"><span class="micro">by yarn count</span>番手ごと（手配の単位）</p>${countCards}`
+    : "";
+
+  box.innerHTML = countSection
+    + `<p class="ysec"><span class="micro">by job / sku</span>案件・品番ごと</p>`
+    + list.map(e => {
     const units = [];
     if (e.current.length) units.push(`現在 ${e.current.join("・")}`);
     if (e.next.length) units.push(`次 ${e.next.join("・")}`);
@@ -2106,8 +2204,9 @@ function renderYarn() {
     return `
       <div class="hcard">
         <span class="micro">${escapeHtml(units.join(" ／ ")) || "—"}</span>
-        <h2><span class="bar"></span>${escapeHtml(e.sku)}
+        <h2><span class="bar"></span>${escapeHtml(e.name)}
           <span class="n">${e.current.length + e.next.length}号機</span></h2>
+        ${e.isGroup ? `<p class="hint" style="margin:-4px 0 8px;">品番: ${escapeHtml([...e.skus].join("・")) || "未設定"}</p>` : ""}
         <div class="hbig" style="margin-bottom:9px;">
           <span class="v num" style="font-size:22px;">${Math.round(e.rolls)}<small>反</small></span>
           <span class="v num" style="font-size:22px;">${fmt(e.totalKg)}<small>kg</small></span>
@@ -2122,8 +2221,10 @@ function renderYarn() {
       </div>`;
   }).join("")
   + `<div class="hcard"><p class="hint">
+      <b>番手ごと</b>は品番やサイズ違いをまたいで同じ糸をまとめた、実際の手配単位です。
+      <b>案件・品番ごと</b>は案件名を付けていればその単位、無ければ品番の単位でまとめます。
+      同じ品番のサイズ違いは、同じ案件名を付けるとひとまとまりになります。
       番手をタップすると、その糸を使っている号機を検索します。
-      同じ品番を複数の号機で流している場合は合算しています。
       「次」は次の品番として登録されている分です。
       <b>過不足</b>は「現在庫 − 残り必要」で、マイナスの糸はその量だけ追加手配が要ります。
     </p></div>`;
@@ -2276,7 +2377,7 @@ function renderHome() {
       ${homeRows(short.slice(0, 6), ({ e, y, lack, kind }) => {
         const cnt = [...e.counts[y.key]].join("/");
         return `<button class="hrow" type="button" data-sku="1" style="--hc:${y.color}">
-          <span class="no" style="min-width:0;">${escapeHtml(e.sku)}</span>
+          <span class="no" style="min-width:0;">${escapeHtml(e.name)}</span>
           <span class="txt">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}（${kind}）</span>
           <span class="val bad">−${fmt(lack)}kg</span>
         </button>`;
