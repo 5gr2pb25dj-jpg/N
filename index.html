@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0a0b0d">
+<meta name="theme-color" content="#22262b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,139 +17,168 @@
 
 <style>
   /* ============================================================
-     単一ダークテーマ（意図的な選択）。
-     すべての色をトークンで定義し、body に必ず背景を塗る。
+     暗いぼかし背景の上に、明るい半透明パネルが浮かぶ構成。
+     単一の見え方に意図的に統一し、すべての色を明示的に塗る。
      ============================================================ */
   :root {
-    color-scheme: dark;
+    color-scheme: light;
 
-    --bg:        #0a0b0d;
-    --panel:     #14171b;
-    --panel-2:   #1b1f25;
-    --panel-3:   #23282f;
-    --line:      rgba(255, 255, 255, 0.09);
-    --line-2:    rgba(255, 255, 255, 0.16);
+    /* 背景（ステージ） */
+    --stage:    #22262b;
+    --stage-2:  #313740;
+    --stage-3:  #171a1e;
 
-    --ink:       #e9ebee;
-    --ink-2:     #949aa2;
-    --muted:     #6a7079;
+    /* 浮かぶパネル */
+    --panel:      rgba(238, 238, 236, 0.95);
+    --panel-in:   rgba(255, 255, 255, 0.72);
+    --panel-in-2: rgba(0, 0, 0, 0.045);
+    --line:       rgba(0, 0, 0, 0.10);
+    --line-2:     rgba(0, 0, 0, 0.18);
 
-    --accent:    #ffd426;
-    --accent-in: #14171b;
-    --accent-dim: rgba(255, 212, 38, 0.13);
+    /* 文字 */
+    --ink:   #16181a;
+    --ink-2: #5c6066;
+    --micro: #9aa0a6;
 
-    /* 状態色 */
-    --st-running:    #22c39a;
-    --st-changeover: #ffb020;
-    --st-stopped:    #ff5b52;
-    --st-idle:       #767c85;
+    /* 暗いパネル・ボタン */
+    --char:    #3a3e44;
+    --char-2:  #4b5058;
+    --on-char: #f2f3f4;
+
+    --accent: #29a1e0;
+
+    /* 状態色（塗りタグ・白文字） */
+    --st-running:    #2b93cf;
+    --st-changeover: #c8871c;
+    --st-stopped:    #cf4a3f;
+    --st-idle:       #868c94;
 
     /* 糸の系統色（表・中・裏） */
-    --yarn-f: #4a9eff;
-    --yarn-m: #e08a3c;
-    --yarn-b: #22b898;
+    --yarn-f: #1f6fa8;
+    --yarn-m: #c2762a;
+    --yarn-b: #2f8a68;
 
-    --danger: #ff5b52;
-    --good:   #22c39a;
+    --danger: #cf4a3f;
+    --good:   #2f8a68;
 
-    --shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --lift: 0 4px 18px rgba(0, 0, 0, 0.38);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-text-size-adjust: 100%; }
+
   body {
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    background: var(--bg);
     color: var(--ink);
     padding-bottom: calc(104px + env(safe-area-inset-bottom));
     -webkit-font-smoothing: antialiased;
+
+    /* ぼかした背景を模したステージ */
+    background-color: var(--stage);
+    background-image:
+      radial-gradient(120% 60% at 18% 0%, rgba(120, 145, 175, 0.30) 0%, transparent 62%),
+      radial-gradient(90% 50% at 100% 22%, rgba(90, 110, 135, 0.24) 0%, transparent 66%),
+      radial-gradient(140% 70% at 50% 108%, rgba(12, 14, 17, 0.85) 0%, transparent 70%),
+      linear-gradient(180deg, var(--stage-2) 0%, var(--stage) 46%, var(--stage-3) 100%);
+    background-attachment: fixed;
   }
+
   button, input, select, textarea { font: inherit; color: inherit; }
   input, select, textarea { -webkit-appearance: none; appearance: none; }
 
-  /* 角を斜めにカット（アークナイツ風） */
-  .notch  { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%); }
-  .notch-s{ clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); }
-
-  /* 英字マイクロラベル */
-  .eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 700;
+  /* 小さな英字ラベル */
+  .micro {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.09em;
+    color: var(--micro);
+    font-weight: 600;
+    line-height: 1.4;
   }
-
   .num { font-variant-numeric: tabular-nums; }
+
+  /* 浮かぶ明るいパネル */
+  .panel {
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: var(--lift);
+  }
 
   /* ---------------- ヘッダー ---------------- */
   header {
-    background:
-      linear-gradient(180deg, var(--panel) 0%, var(--bg) 100%);
-    padding: 16px 14px 14px;
-    padding-top: max(16px, env(safe-area-inset-top));
-    border-bottom: 1px solid var(--line);
-    position: relative;
+    padding: 10px 12px 12px;
+    padding-top: max(10px, env(safe-area-inset-top));
   }
-  header::after {
-    content: "";
-    position: absolute; left: 0; right: 0; bottom: -1px;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 56px, transparent 56px);
+  .topbar { display: flex; align-items: center; gap: 8px; }
+  .topbar .home {
+    width: 38px; height: 32px; flex: none;
+    background: rgba(20, 23, 27, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    display: grid; place-items: center;
   }
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .brand .mark {
-    width: 26px; height: 26px; flex: none;
-    background: var(--accent);
-    clip-path: polygon(50% 0, 100% 32%, 50% 100%, 0 32%);
+  .topbar .home span {
+    width: 13px; height: 13px; background: var(--on-char);
+    clip-path: polygon(50% 0, 100% 42%, 100% 100%, 0 100%, 0 42%);
   }
-  .brand h1 { font-size: 17px; font-weight: 800; letter-spacing: 0.04em; }
-  .brand .sub { margin-left: auto; text-align: right; line-height: 1.35; }
+  .topbar h1 {
+    font-size: 15px; font-weight: 700; letter-spacing: 0.03em;
+    color: #f2f3f4;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+  .topbar .ver {
+    margin-left: auto; font-size: 9px; letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.5); font-weight: 600;
+  }
 
-  .kpis {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-top: 14px;
-  }
+  /* AK のリソース表示風 KPI */
+  .kpis { display: flex; gap: 5px; margin-top: 10px; }
   .kpi {
-    background: var(--panel-2);
-    border-left: 2px solid var(--accent);
-    padding: 9px 10px 8px;
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(20, 23, 27, 0.74);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 5px 7px;
   }
-  .kpi .v { font-size: 21px; font-weight: 800; line-height: 1.1; letter-spacing: 0.01em; }
-  .kpi .v small { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-left: 1px; }
-  .kpi .l { font-size: 10px; color: var(--ink-2); margin-top: 3px; }
+  .kpi .ic { width: 16px; height: 16px; flex: none; background: var(--kc); }
+  .kpi .tx { min-width: 0; display: block; }
+  .kpi .v {
+    display: block;
+    font-size: 15px; font-weight: 700; color: #f2f3f4; line-height: 1.15;
+    white-space: nowrap;
+  }
+  .kpi .v small { font-size: 10px; color: rgba(255, 255, 255, 0.6); font-weight: 600; }
+  .kpi .l {
+    display: block;
+    font-size: 8.5px; color: rgba(255, 255, 255, 0.55); letter-spacing: 0.02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 
   .substrip {
-    display: flex; gap: 8px; margin-top: 6px;
-    background: var(--panel-2);
-    padding: 7px 10px;
-    font-size: 11px; color: var(--ink-2);
+    display: flex; gap: 10px; margin-top: 5px;
+    background: rgba(20, 23, 27, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    padding: 6px 9px;
+    font-size: 10.5px; color: rgba(255, 255, 255, 0.62);
   }
-  .substrip b { color: var(--ink); font-weight: 700; }
+  .substrip b { color: #f2f3f4; font-weight: 700; font-size: 12px; }
   .substrip span + span { margin-left: auto; }
 
   /* ---------------- ツールバー ---------------- */
-  .toolbar {
-    position: sticky; top: 0; z-index: 5;
-    background: var(--bg);
-    padding: 10px 14px 9px;
-    border-bottom: 1px solid var(--line);
-  }
+  .toolbar { padding: 0 12px 8px; }
   .search {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid var(--line-2);
+    border: 1px solid var(--line);
     background: var(--panel);
     color: var(--ink);
     font-size: 14px;
+    box-shadow: var(--lift);
   }
-  .search::placeholder { color: var(--muted); }
+  .search::placeholder { color: #9aa0a6; }
   .search:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 
   .chips {
-    display: flex; gap: 6px; margin-top: 8px;
+    display: flex; gap: 4px; margin-top: 7px;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none; padding-bottom: 2px;
   }
@@ -157,169 +186,182 @@
   .chip {
     flex: none;
     padding: 6px 12px;
-    border: 1px solid var(--line-2);
-    background: transparent;
-    color: var(--ink-2);
-    font-size: 12px;
-    font-weight: 600;
+    border: none;
+    background: rgba(20, 23, 27, 0.7);
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 12px; font-weight: 600;
     cursor: pointer;
-    letter-spacing: 0.02em;
   }
   .chip[aria-pressed="true"] {
     background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-in);
-    font-weight: 800;
+    color: #fff;
+    font-weight: 700;
   }
 
   /* ---------------- 一覧 ---------------- */
-  main { padding: 12px 14px; display: grid; gap: 9px; }
-  .count-line { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  main { padding: 4px 12px 12px; display: grid; gap: 8px; }
+  .count-line {
+    font-size: 9px; letter-spacing: 0.11em; color: rgba(255, 255, 255, 0.45);
+    font-weight: 600; padding: 2px 1px;
+  }
 
   .card {
     width: 100%;
     text-align: left;
     background: var(--panel);
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--st, var(--st-idle));
-    padding: 11px 12px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: var(--lift);
+    padding: 0 0 10px;
     cursor: pointer;
-    display: grid;
-    gap: 9px;
+    display: block;
+    position: relative;
   }
-  .card:active { background: var(--panel-2); }
+  .card:active { background: rgba(228, 228, 226, 0.95); }
 
-  .card .row1 { display: flex; align-items: center; gap: 8px; }
-  .card .no {
-    font-size: 18px; font-weight: 800; letter-spacing: 0.02em;
+  .card .head {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 10px 7px;
   }
-  .card .no i { font-style: normal; font-size: 11px; color: var(--ink-2); font-weight: 700; margin-left: 2px; }
-  .card .model {
-    font-size: 11px; color: var(--muted);
+  .tag {
+    flex: none;
+    background: var(--tg);
+    color: #fff;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.02em;
+    padding: 3px 7px;
+    line-height: 1.3;
+  }
+  .card .no {
+    margin-left: auto; text-align: right; line-height: 1.15; min-width: 0;
+  }
+  .card .no b { font-size: 19px; font-weight: 800; letter-spacing: 0.01em; }
+  .card .no i { font-style: normal; font-size: 10px; color: var(--ink-2); font-weight: 700; margin-left: 1px; }
+  .card .no .model {
+    display: block; margin-top: 2px;
+    font-size: 10px; color: var(--ink-2); font-weight: 600;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .status {
-    margin-left: auto; flex: none;
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
-    padding: 4px 9px;
-    color: var(--st);
-    background: color-mix(in srgb, var(--st) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--st) 40%, transparent);
-  }
-  .status::before { content: ""; width: 6px; height: 6px; background: currentColor; }
 
-  .card .row2 {
-    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
-    font-size: 12px; color: var(--ink-2);
-  }
-  .card .sku {
-    font-weight: 800; color: var(--ink); font-size: 13px; letter-spacing: 0.03em;
-  }
-  .card .rolls { color: var(--accent); font-weight: 700; }
-  .card .due { margin-left: auto; }
-  .due.soon    { color: var(--st-changeover); font-weight: 700; }
-  .due.overdue { color: var(--st-stopped); font-weight: 700; }
+  .card .body { display: block; padding: 0 10px; }
+  .hr { display: block; height: 1px; background: var(--line); margin: 0 10px 8px; }
 
-  .meter { display: flex; align-items: center; gap: 8px; }
-  .meter .lab { font-size: 10px; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; width: 34px; flex: none; }
-  .meter .bar { flex: 1; height: 5px; background: var(--panel-3); overflow: hidden; }
-  .meter .bar i { display: block; height: 100%; background: var(--accent); }
-  .meter .bar.prod i { background: var(--yarn-f); }
-  .meter .pct { font-size: 11px; color: var(--ink-2); min-width: 4.4em; text-align: right; font-weight: 700; }
-
-  .yarns { display: flex; gap: 6px; }
-  .yarn-chip {
-    flex: 1;
-    background: var(--panel-2);
-    padding: 6px 7px;
-    border-top: 2px solid var(--yc);
-    min-width: 0;
+  .skuline { display: flex; align-items: baseline; gap: 8px; margin-top: 1px; }
+  .skuline .sku { font-size: 15px; font-weight: 800; letter-spacing: 0.02em; }
+  .skuline .rolls {
+    font-size: 11px; font-weight: 700; color: #fff; background: var(--char);
+    padding: 2px 6px;
   }
-  .yarn-chip .k { font-size: 9px; letter-spacing: 0.1em; color: var(--muted); font-weight: 700; }
-  .yarn-chip .v { font-size: 13px; font-weight: 800; margin-top: 1px; }
-  .yarn-chip .v small { font-size: 9px; color: var(--ink-2); font-weight: 700; margin-left: 1px; }
+  .skuline .due { margin-left: auto; font-size: 11px; color: var(--ink-2); font-weight: 600; }
+  .due.soon    { color: #a86f0f; font-weight: 700; }
+  .due.overdue { color: var(--danger); font-weight: 700; }
+
+  .mrow { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+  .mrow .micro { flex: none; width: 52px; }
+  .mrow .bar { flex: 1; height: 6px; background: var(--panel-in-2); overflow: hidden; }
+  .mrow .bar i { display: block; height: 100%; background: var(--char); }
+  .mrow .bar.out i { background: var(--accent); }
+  .mrow .val { font-size: 11px; font-weight: 700; min-width: 5.6em; text-align: right; }
+
+  .yarns { display: flex; gap: 4px; margin-top: 8px; }
+  .yarn-cell {
+    flex: 1; min-width: 0;
+    background: var(--panel-in);
+    border-left: 3px solid var(--yc);
+    padding: 5px 6px;
+  }
+  .yarn-cell .k { font-size: 9px; color: var(--ink-2); font-weight: 600; }
+  .yarn-cell .v { font-size: 13px; font-weight: 800; line-height: 1.2; }
+  .yarn-cell .v small { font-size: 9px; color: var(--ink-2); font-weight: 600; }
 
   .card .note {
-    font-size: 11px; color: var(--muted);
-    border-left: 2px solid var(--line-2); padding-left: 7px;
+    margin-top: 8px; font-size: 11px; color: var(--ink-2);
+    background: var(--panel-in-2); padding: 5px 7px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
   .empty {
-    text-align: center; color: var(--muted);
+    text-align: center; color: rgba(255, 255, 255, 0.62);
     padding: 44px 16px; font-size: 13px; line-height: 1.9;
   }
   .empty button {
     display: block; margin: 14px auto 0;
-    padding: 11px 20px;
-    border: 1px solid var(--accent); background: transparent; color: var(--accent);
-    font-weight: 700; cursor: pointer; letter-spacing: 0.04em;
+    padding: 11px 20px; border: none;
+    background: var(--accent); color: #fff;
+    font-weight: 700; cursor: pointer;
   }
 
   /* ---------------- FAB ---------------- */
   .fabs {
-    position: fixed; right: 14px;
-    bottom: calc(16px + env(safe-area-inset-bottom));
-    display: flex; flex-direction: column; gap: 9px; align-items: flex-end;
+    position: fixed; right: 12px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
     z-index: 6;
   }
-  .fab { border: none; cursor: pointer; font-weight: 800; box-shadow: var(--shadow); }
+  .fab { border: none; cursor: pointer; font-weight: 700; box-shadow: var(--lift); }
   .fab-add {
-    width: 54px; height: 54px; font-size: 26px; line-height: 1;
-    background: var(--accent); color: var(--accent-in);
-    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    width: 52px; height: 52px; font-size: 25px; line-height: 1;
+    background: var(--accent); color: #fff;
   }
   .fab-bulk {
-    padding: 8px 13px; font-size: 11px; letter-spacing: 0.08em;
-    background: var(--panel-3); color: var(--ink);
-    border: 1px solid var(--line-2);
+    padding: 8px 13px; font-size: 11px;
+    background: rgba(20, 23, 27, 0.86); color: var(--on-char);
+    border: 1px solid rgba(255, 255, 255, 0.16);
   }
 
   /* ---------------- シート ---------------- */
   .overlay {
     position: fixed; inset: 0; z-index: 10;
-    background: rgba(0, 0, 0, 0.72);
+    background: rgba(10, 12, 14, 0.66);
     display: none;
   }
   .overlay.open { display: block; }
   .sheet {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
-    background: var(--bg);
-    border-top: 2px solid var(--accent);
+    background: #e9e9e7;
     padding: 0 0 calc(18px + env(safe-area-inset-bottom));
     max-height: 92vh; overflow-y: auto;
     transform: translateY(105%);
     transition: transform 0.22s ease;
+    box-shadow: 0 -6px 26px rgba(0, 0, 0, 0.5);
   }
   .sheet.open { transform: translateY(0); }
+
   .sheet-head {
     position: sticky; top: 0; z-index: 2;
+    background: rgba(28, 31, 36, 0.97);
+    padding: 11px 12px;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .sheet-head h2 { font-size: 14px; font-weight: 700; color: #f2f3f4; letter-spacing: 0.02em; }
+  .sheet-head .micro { margin-left: auto; color: rgba(255, 255, 255, 0.5); }
+  .sheet-head .dot { width: 4px; height: 15px; background: var(--accent); flex: none; }
+
+  .sheet-body { padding: 12px; display: grid; gap: 10px; }
+
+  /* セクション：左に見出しブロック、右に内容（AK の行レイアウト） */
+  .sec {
     background: var(--panel);
-    border-bottom: 1px solid var(--line);
-    padding: 13px 14px 11px;
-    display: flex; align-items: center; gap: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    display: grid;
+    grid-template-columns: 66px 1fr;
   }
-  .sheet-head h2 { font-size: 15px; font-weight: 800; letter-spacing: 0.03em; }
-  .sheet-body { padding: 14px; }
-
-  .sec { margin-bottom: 18px; }
-  .sec-h {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 10px; padding-bottom: 6px;
-    border-bottom: 1px solid var(--line);
+  .sec > .sec-l {
+    background: var(--panel-in-2);
+    padding: 10px 6px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    gap: 3px; text-align: center;
+    border-right: 1px solid var(--line);
   }
-  .sec-h .bar { width: 3px; height: 13px; background: var(--accent); flex: none; }
-  .sec-h h3 { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; }
-  .sec-h .en { margin-left: auto; }
+  .sec > .sec-l h3 { font-size: 11.5px; font-weight: 800; letter-spacing: 0; line-height: 1.35; }
+  .sec > .sec-r { padding: 10px; min-width: 0; }
 
-  .field { margin-bottom: 11px; }
-  .field label { display: block; font-size: 11px; color: var(--ink-2); margin-bottom: 5px; font-weight: 600; }
+  .field { margin-bottom: 9px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 11px; color: var(--ink-2); margin-bottom: 4px; font-weight: 600; }
   .field input, .field select, .field textarea {
     width: 100%;
-    padding: 10px 11px;
+    padding: 9px 10px;
     border: 1px solid var(--line-2);
-    background: var(--panel);
+    background: #fff;
     color: var(--ink);
     font-size: 14px;
   }
@@ -329,132 +371,129 @@
   .field select {
     background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
                       linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
-    background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+    background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
     background-size: 5px 5px, 5px 5px;
     background-repeat: no-repeat;
-    padding-right: 32px;
+    padding-right: 30px;
   }
-  .field textarea { resize: vertical; min-height: 62px; }
-  .field .hint { font-size: 10px; color: var(--muted); margin-top: 5px; line-height: 1.6; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  .field textarea { resize: vertical; min-height: 56px; }
+  .hint { font-size: 10px; color: var(--ink-2); line-height: 1.65; }
+  .field .hint { margin-top: 5px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .grid2 .field, .grid3 .field { margin-bottom: 0; }
 
-  .yarn-label { display: flex; align-items: center; gap: 5px; }
+  .yarn-label { display: flex; align-items: center; gap: 4px; }
   .yarn-label::before { content: ""; width: 8px; height: 8px; background: var(--yc); flex: none; }
 
-  /* 計算結果パネル */
-  .calc {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    padding: 12px;
-  }
+  /* 計算パネル */
   .calc-row { display: flex; align-items: baseline; gap: 8px; font-size: 12px; }
-  .calc-row + .calc-row { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--line); }
-  .calc-row .k { color: var(--ink-2); }
-  .calc-row .v { margin-left: auto; font-weight: 800; font-size: 14px; }
-  .calc-table { margin-top: 11px; }
+  .calc-row .k { color: var(--ink-2); font-weight: 600; }
+  .calc-row .v { margin-left: auto; font-weight: 800; font-size: 15px; }
+
+  .calc-table { margin-top: 9px; }
   .calc-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
   .calc-table th, .calc-table td {
-    padding: 7px 6px; text-align: right; border-bottom: 1px solid var(--line);
+    padding: 6px 4px; text-align: right; border-bottom: 1px solid var(--line);
   }
-  .calc-table th { color: var(--muted); font-size: 10px; letter-spacing: 0.08em; font-weight: 700; text-transform: uppercase; }
+  .calc-table th {
+    color: var(--micro); font-size: 9px; letter-spacing: 0.06em; font-weight: 600;
+  }
   .calc-table td:first-child, .calc-table th:first-child { text-align: left; }
   .calc-table tbody td { font-weight: 700; }
-  .calc-table .yname { display: flex; align-items: center; gap: 6px; font-weight: 800; }
+  .calc-table .yname { display: flex; align-items: center; gap: 5px; font-weight: 800; }
   .calc-table .yname::before { content: ""; width: 8px; height: 8px; background: var(--yc); flex: none; }
   .calc-table tr:last-child td { border-bottom: none; }
   .short { color: var(--danger); }
   .over  { color: var(--good); }
   .formula {
-    margin-top: 10px; font-size: 10px; color: var(--muted); line-height: 1.7;
-    background: var(--panel-2); padding: 8px 9px;
+    margin-top: 8px; font-size: 9.5px; color: var(--ink-2); line-height: 1.7;
+    background: var(--panel-in-2); padding: 7px 8px;
   }
 
-  /* 水揚げスライダー */
-  .lift-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 9px; }
-  .lift-head .big { font-size: 24px; font-weight: 800; }
+  /* 水揚げ */
+  .lift-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .lift-head .big { font-size: 25px; font-weight: 800; line-height: 1.1; }
   .lift-head .big small { font-size: 12px; color: var(--ink-2); font-weight: 700; }
-  .lift-head .rest { margin-left: auto; font-size: 12px; color: var(--ink-2); }
+  .lift-head .rest { margin-left: auto; font-size: 11px; color: var(--ink-2); font-weight: 600; }
   .lift-head .rest b { color: var(--accent); font-size: 15px; font-weight: 800; }
 
-  input[type="range"] {
-    width: 100%; background: transparent; margin: 6px 0 2px;
-  }
+  input[type="range"] { width: 100%; background: transparent; margin: 4px 0 2px; }
   input[type="range"]::-webkit-slider-runnable-track {
-    height: 8px; background: var(--panel-3);
+    height: 6px; background: rgba(0, 0, 0, 0.14);
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
-    width: 22px; height: 22px; margin-top: -7px;
-    background: var(--accent);
-    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    width: 20px; height: 20px; margin-top: -7px;
+    background: var(--accent); border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
     cursor: pointer;
   }
-  input[type="range"]::-moz-range-track { height: 8px; background: var(--panel-3); }
+  input[type="range"]::-moz-range-track { height: 6px; background: rgba(0, 0, 0, 0.14); }
   input[type="range"]::-moz-range-thumb {
-    width: 20px; height: 20px; border: none; background: var(--accent);
-    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); cursor: pointer;
+    width: 18px; height: 18px; background: var(--accent);
+    border: 2px solid #fff; border-radius: 50%; cursor: pointer;
   }
-  .range-ends { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-weight: 700; }
+  .range-ends { display: flex; justify-content: space-between; font-size: 9px; color: var(--micro); font-weight: 600; }
 
   .quick {
-    display: flex; gap: 8px; align-items: flex-end; margin-top: 13px;
-    padding-top: 13px; border-top: 1px solid var(--line);
+    display: flex; gap: 7px; align-items: flex-end; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid var(--line);
   }
   .quick .field { flex: 1; margin-bottom: 0; }
   .quick button {
-    flex: none; padding: 10px 15px;
-    background: var(--accent); color: var(--accent-in);
-    border: none; font-weight: 800; cursor: pointer; letter-spacing: 0.04em;
+    flex: none; padding: 9px 15px;
+    background: var(--accent); color: #fff;
+    border: none; font-weight: 700; cursor: pointer;
   }
 
-  .log { margin-top: 12px; }
+  .log { margin-top: 9px; }
   .log-item {
-    display: flex; align-items: center; gap: 9px;
-    padding: 7px 0; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid var(--line);
     font-size: 12px;
   }
   .log-item .d { color: var(--ink-2); font-weight: 600; }
   .log-item .kg { margin-left: auto; font-weight: 800; }
   .log-item button {
-    flex: none; width: 26px; height: 26px;
+    flex: none; width: 24px; height: 24px;
     background: transparent; border: 1px solid var(--line-2);
-    color: var(--muted); cursor: pointer; font-size: 13px; line-height: 1;
+    color: var(--ink-2); cursor: pointer; font-size: 12px; line-height: 1;
   }
-  .log-empty { font-size: 11px; color: var(--muted); padding: 9px 0; }
+  .log-empty { font-size: 11px; color: var(--ink-2); padding: 8px 0; }
 
   /* ボタン */
-  .actions { display: grid; gap: 8px; margin-top: 18px; }
+  .actions { display: grid; gap: 7px; margin-top: 4px; }
   .btn {
     padding: 13px;
-    border: 1px solid var(--line-2);
-    background: var(--panel);
-    color: var(--ink);
+    border: none;
+    background: var(--char);
+    color: var(--on-char);
     cursor: pointer;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
+    box-shadow: var(--lift);
   }
-  .btn-primary {
-    background: var(--accent); color: var(--accent-in); border-color: var(--accent);
-    font-weight: 800;
-  }
-  .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); box-shadow: none; }
 
   /* トースト */
   .toast {
-    position: fixed; left: 14px; right: 14px;
-    bottom: calc(88px + env(safe-area-inset-bottom));
+    position: fixed; left: 12px; right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
     z-index: 20;
-    background: var(--accent); color: var(--accent-in);
-    padding: 12px 14px;
-    font-size: 13px; font-weight: 700;
-    box-shadow: var(--shadow);
+    background: rgba(20, 23, 27, 0.95);
+    color: #f2f3f4;
+    border-left: 4px solid var(--accent);
+    padding: 12px 13px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: var(--lift);
     opacity: 0; pointer-events: none;
     transition: opacity 0.2s ease;
-    border-left: 4px solid var(--accent-in);
   }
   .toast.show { opacity: 1; }
-  .toast.error { background: var(--danger); color: #fff; }
+  .toast.error { border-left-color: var(--danger); }
 
   @media (prefers-reduced-motion: reduce) {
     .sheet, .toast { transition: none; }
@@ -464,18 +503,27 @@
 <body>
 
 <header>
-  <div class="brand">
-    <span class="mark" aria-hidden="true"></span>
+  <div class="topbar">
+    <span class="home" aria-hidden="true"><span></span></span>
     <h1>工場稼働管理</h1>
-    <span class="sub">
-      <span class="eyebrow">Operation Status</span>
-    </span>
+    <span class="ver">operation status</span>
   </div>
+
   <div class="kpis">
-    <div class="kpi"><div class="v num" id="kpiUptime">–</div><div class="l">平均稼働率</div></div>
-    <div class="kpi"><div class="v num" id="kpiRunning">–</div><div class="l">稼働中 / 全台数</div></div>
-    <div class="kpi"><div class="v num" id="kpiChange">–</div><div class="l">今週の段取り</div></div>
+    <div class="kpi" style="--kc:#29a1e0">
+      <span class="ic"></span>
+      <span class="tx"><span class="v num" id="kpiUptime">–</span><span class="l">平均稼働率</span></span>
+    </div>
+    <div class="kpi" style="--kc:#2f8a68">
+      <span class="ic"></span>
+      <span class="tx"><span class="v num" id="kpiRunning">–</span><span class="l">稼働中/全</span></span>
+    </div>
+    <div class="kpi" style="--kc:#c8871c">
+      <span class="ic"></span>
+      <span class="tx"><span class="v num" id="kpiChange">–</span><span class="l">今週の段取り</span></span>
+    </div>
   </div>
+
   <div class="substrip">
     <span>本日の水揚げ <b class="num" id="kpiToday">0.0</b> kg</span>
     <span>残り生産量 <b class="num" id="kpiRemain">0.0</b> kg</span>
@@ -498,118 +546,126 @@
 <div class="overlay" id="editOverlay"></div>
 <form class="sheet" id="editSheet">
   <div class="sheet-head">
-    <span class="brand-mark" style="width:10px;height:14px;background:var(--accent);flex:none;"></span>
+    <span class="dot"></span>
     <h2 id="editTitle">機械を追加</h2>
-    <span class="eyebrow" style="margin-left:auto;">Unit Config</span>
+    <span class="micro">unit config</span>
   </div>
 
   <div class="sheet-body">
 
     <!-- 基本情報 -->
     <div class="sec">
-      <div class="sec-h"><span class="bar"></span><h3>基本情報</h3><span class="eyebrow en">Basic</span></div>
-      <div class="grid2">
-        <div class="field">
-          <label for="fNo">号機番号 *</label>
-          <input id="fNo" required placeholder="例: 01">
+      <div class="sec-l"><h3>基本<br>情報</h3><span class="micro">basic</span></div>
+      <div class="sec-r">
+        <div class="grid2" style="margin-bottom:9px;">
+          <div class="field">
+            <label for="fNo">号機番号 *</label>
+            <input id="fNo" required placeholder="01">
+          </div>
+          <div class="field">
+            <label for="fModel">機種</label>
+            <input id="fModel" placeholder="福原 V-LEC4">
+          </div>
         </div>
         <div class="field">
-          <label for="fModel">機種</label>
-          <input id="fModel" placeholder="例: 福原 V-LEC4">
+          <label for="fStatus">状態</label>
+          <select id="fStatus">
+            <option value="running">稼働中</option>
+            <option value="changeover">段取り中</option>
+            <option value="stopped">停止</option>
+            <option value="idle" selected>計画停止</option>
+          </select>
         </div>
-      </div>
-      <div class="field">
-        <label for="fStatus">状態</label>
-        <select id="fStatus">
-          <option value="running">稼働中</option>
-          <option value="changeover">段取り中</option>
-          <option value="stopped">停止</option>
-          <option value="idle" selected>計画停止</option>
-        </select>
-      </div>
-      <div class="grid2">
+        <div class="grid2" style="margin-bottom:9px;">
+          <div class="field">
+            <label for="fUptime">稼働率（%）</label>
+            <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
+          </div>
+          <div class="field">
+            <label for="fNext">次回段取り予定日</label>
+            <input id="fNext" type="date">
+          </div>
+        </div>
         <div class="field">
-          <label for="fUptime">稼働率（%）</label>
-          <input id="fUptime" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0〜100">
+          <label for="fNote">メモ</label>
+          <textarea id="fNote" placeholder="トラブル内容・引き継ぎ事項など"></textarea>
         </div>
-        <div class="field">
-          <label for="fNext">次回段取り予定日</label>
-          <input id="fNext" type="date">
-        </div>
-      </div>
-      <div class="field">
-        <label for="fNote">メモ</label>
-        <textarea id="fNote" placeholder="トラブル内容・引き継ぎ事項など"></textarea>
       </div>
     </div>
 
     <!-- 生産オーダー -->
     <div class="sec">
-      <div class="sec-h"><span class="bar"></span><h3>生産オーダー</h3><span class="eyebrow en">Order</span></div>
-      <div class="grid3">
-        <div class="field">
-          <label for="fSku">品番</label>
-          <input id="fSku" placeholder="AB-1234">
-        </div>
-        <div class="field">
-          <label for="fRolls">反数</label>
-          <input id="fRolls" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
-        </div>
-        <div class="field">
-          <label for="fTotalKg">合計生産量(kg)</label>
-          <input id="fTotalKg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+      <div class="sec-l"><h3>オーダー</h3><span class="micro">order</span></div>
+      <div class="sec-r">
+        <div class="grid3">
+          <div class="field">
+            <label for="fSku">品番</label>
+            <input id="fSku" placeholder="AB-1234">
+          </div>
+          <div class="field">
+            <label for="fRolls">反数</label>
+            <input id="fRolls" type="number" inputmode="numeric" min="0" step="1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="fTotalKg">生産量kg</label>
+            <input id="fTotalKg" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
         </div>
       </div>
     </div>
 
     <!-- 交編率 -->
     <div class="sec">
-      <div class="sec-h"><span class="bar"></span><h3>交編率</h3><span class="eyebrow en">Blend Ratio</span></div>
-      <div class="grid3">
-        <div class="field">
-          <label for="fRatioF" class="yarn-label" style="--yc:var(--yarn-f)">表糸 %</label>
-          <input id="fRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+      <div class="sec-l"><h3>交編率</h3><span class="micro">blend</span></div>
+      <div class="sec-r">
+        <div class="grid3" style="margin-bottom:9px;">
+          <div class="field">
+            <label for="fRatioF" class="yarn-label" style="--yc:var(--yarn-f)">表 %</label>
+            <input id="fRatioF" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="fRatioM" class="yarn-label" style="--yc:var(--yarn-m)">中 %</label>
+            <input id="fRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="fRatioB" class="yarn-label" style="--yc:var(--yarn-b)">裏 %</label>
+            <input id="fRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+          </div>
         </div>
         <div class="field">
-          <label for="fRatioM" class="yarn-label" style="--yc:var(--yarn-m)">中糸 %</label>
-          <input id="fRatioM" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
+          <label for="fLoss">ロス率（%）</label>
+          <input id="fLoss" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="3">
+          <p class="hint" id="ratioHint"></p>
         </div>
-        <div class="field">
-          <label for="fRatioB" class="yarn-label" style="--yc:var(--yarn-b)">裏糸 %</label>
-          <input id="fRatioB" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="0">
-        </div>
-      </div>
-      <div class="field">
-        <label for="fLoss">ロス率（%）</label>
-        <input id="fLoss" type="number" inputmode="decimal" min="0" max="100" step="0.1" placeholder="3">
-        <p class="hint" id="ratioHint"></p>
       </div>
     </div>
 
     <!-- 発注糸量 -->
     <div class="sec">
-      <div class="sec-h"><span class="bar"></span><h3>発注糸量</h3><span class="eyebrow en">Ordered</span></div>
-      <div class="grid3">
-        <div class="field">
-          <label for="fOrdF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
-          <input id="fOrdF" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+      <div class="sec-l"><h3>発注<br>糸量</h3><span class="micro">ordered</span></div>
+      <div class="sec-r">
+        <div class="grid3">
+          <div class="field">
+            <label for="fOrdF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
+            <input id="fOrdF" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="fOrdM" class="yarn-label" style="--yc:var(--yarn-m)">中 kg</label>
+            <input id="fOrdM" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="fOrdB" class="yarn-label" style="--yc:var(--yarn-b)">裏 kg</label>
+            <input id="fOrdB" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
+          </div>
         </div>
-        <div class="field">
-          <label for="fOrdM" class="yarn-label" style="--yc:var(--yarn-m)">中 kg</label>
-          <input id="fOrdM" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
-        </div>
-        <div class="field">
-          <label for="fOrdB" class="yarn-label" style="--yc:var(--yarn-b)">裏 kg</label>
-          <input id="fOrdB" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0">
-        </div>
+        <p class="hint" style="margin-top:7px;">生産開始時に手配した糸量。必要量との差分が下に出ます。</p>
       </div>
-      <p class="hint">生産開始時に手配した糸量。必要量との差分が下に表示されます。</p>
     </div>
 
     <!-- 水揚げ -->
     <div class="sec" id="liftSec">
-      <div class="sec-h"><span class="bar"></span><h3>水揚げ記録</h3><span class="eyebrow en">Daily Output</span></div>
-      <div class="calc">
+      <div class="sec-l"><h3>水揚げ<br>記録</h3><span class="micro">output</span></div>
+      <div class="sec-r">
         <div class="lift-head">
           <span class="big num" id="liftValue">0.0<small> kg</small></span>
           <span class="rest">残り <b class="num" id="liftRest">0.0</b> kg</span>
@@ -631,8 +687,8 @@
 
     <!-- 原糸必要量 -->
     <div class="sec">
-      <div class="sec-h"><span class="bar"></span><h3>原糸必要量</h3><span class="eyebrow en">Yarn Required</span></div>
-      <div class="calc">
+      <div class="sec-l"><h3>原糸<br>必要量</h3><span class="micro">yarn</span></div>
+      <div class="sec-r">
         <div class="calc-row">
           <span class="k">残り生産量（編残）</span>
           <span class="v num" id="cRemain">0.0 kg</span>
@@ -661,24 +717,29 @@
 <div class="overlay" id="bulkOverlay"></div>
 <form class="sheet" id="bulkSheet">
   <div class="sheet-head">
-    <span style="width:10px;height:14px;background:var(--accent);flex:none;"></span>
+    <span class="dot"></span>
     <h2>一括登録</h2>
-    <span class="eyebrow" style="margin-left:auto;">Batch</span>
+    <span class="micro">batch</span>
   </div>
   <div class="sheet-body">
-    <div class="grid2">
-      <div class="field">
-        <label for="bCount">台数 *</label>
-        <input id="bCount" type="number" inputmode="numeric" min="1" max="200" step="1" required placeholder="例: 50">
-      </div>
-      <div class="field">
-        <label for="bPrefix">号機の接頭辞</label>
-        <input id="bPrefix" placeholder="例: K-（空欄可）">
+    <div class="sec">
+      <div class="sec-l"><h3>設定</h3><span class="micro">config</span></div>
+      <div class="sec-r">
+        <div class="grid2">
+          <div class="field">
+            <label for="bCount">台数 *</label>
+            <input id="bCount" type="number" inputmode="numeric" min="1" max="200" step="1" required placeholder="50">
+          </div>
+          <div class="field">
+            <label for="bPrefix">号機の接頭辞</label>
+            <input id="bPrefix" placeholder="K-（空欄可）">
+          </div>
+        </div>
+        <p class="hint" style="margin-top:7px;">
+          号機は「接頭辞＋連番（01, 02, …）」で採番し、既存の号機がある場合は続きの番号から作成します。初期状態は「計画停止」です。
+        </p>
       </div>
     </div>
-    <p class="hint" style="font-size:11px;color:var(--muted);line-height:1.7;">
-      号機は「接頭辞＋連番（01, 02, …）」で採番し、既存の号機がある場合は続きの番号から作成します。初期状態は「計画停止」です。
-    </p>
     <div class="actions">
       <button class="btn btn-primary" type="submit">作成する</button>
       <button class="btn" type="button" id="btnBulkCancel">キャンセル</button>
@@ -873,7 +934,7 @@ function renderSummary() {
   document.getElementById("kpiUptime").innerHTML =
     avg === null ? "–" : `${avg}<small>%</small>`;
   document.getElementById("kpiRunning").innerHTML =
-    `${running}<small> / ${total}</small>`;
+    `${running}<small>/${total}</small>`;
   document.getElementById("kpiChange").innerHTML =
     `${weekly}<small>件</small>`;
   document.getElementById("kpiToday").textContent = fmt(todayKg);
@@ -902,39 +963,45 @@ function cardHtml(m) {
   const c = calc(m);
   const uptime = Math.max(0, Math.min(100, num(m.uptime)));
 
-  const yarnBlock = c.total > 0 ? `
-    <span class="meter">
-      <span class="lab">水揚</span>
-      <span class="bar prod"><i style="width:${Math.min(100, c.progress)}%"></i></span>
-      <span class="pct num">${fmt(c.produced, 0)}/${fmt(c.total, 0)}kg</span>
+  const prodBlock = c.total > 0 ? `
+    <span class="mrow">
+      <span class="micro">output▶</span>
+      <span class="bar out"><i style="width:${Math.min(100, c.progress)}%"></i></span>
+      <span class="val num">${fmt(c.produced, 0)}/${fmt(c.total, 0)}kg</span>
     </span>
     <span class="yarns">
       ${YARNS.map(y => `
-        <span class="yarn-chip" style="--yc:${y.color}">
+        <span class="yarn-cell" style="--yc:${y.color}">
           <span class="k">${y.label}糸 残</span>
           <span class="v num">${fmt(c.need[y.key].rest)}<small>kg</small></span>
         </span>`).join("")}
     </span>` : "";
 
   return `
-    <button class="card notch" type="button" data-id="${escapeHtml(m.id)}" style="--st:${st.color}">
-      <span class="row1">
-        <span class="no">${escapeHtml(m.no)}<i>号機</i></span>
-        <span class="model">${escapeHtml(m.model)}</span>
-        <span class="status">${st.label}</span>
+    <button class="card" type="button" data-id="${escapeHtml(m.id)}">
+      <span class="head">
+        <span class="tag" style="--tg:${st.color}">${st.label}</span>
+        <span class="no">
+          <b>${escapeHtml(m.no)}</b><i>号機</i>
+          <span class="model">${escapeHtml(m.model)}</span>
+        </span>
       </span>
-      <span class="row2">
-        <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
-        ${m.rolls > 0 ? `<span class="rolls num">${m.rolls}反</span>` : ""}
-        ${days !== null ? `<span class="due ${dueCls}">${dueText(days)}</span>` : ""}
+      <span class="hr"></span>
+      <span class="body">
+        <span class="micro">sku</span>
+        <span class="skuline">
+          <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+          ${m.rolls > 0 ? `<span class="rolls num">${m.rolls}反</span>` : ""}
+          ${days !== null ? `<span class="due ${dueCls}">${dueText(days)}</span>` : ""}
+        </span>
+        <span class="mrow">
+          <span class="micro">uptime▶</span>
+          <span class="bar"><i style="width:${uptime}%"></i></span>
+          <span class="val num">${uptime}%</span>
+        </span>
+        ${prodBlock}
+        ${m.note ? `<span class="note">${escapeHtml(m.note)}</span>` : ""}
       </span>
-      <span class="meter">
-        <span class="lab">稼働</span>
-        <span class="bar"><i style="width:${uptime}%"></i></span>
-        <span class="pct num">${uptime}%</span>
-      </span>
-      ${yarnBlock}
-      ${m.note ? `<span class="note">${escapeHtml(m.note)}</span>` : ""}
     </button>`;
 }
 
@@ -1120,7 +1187,7 @@ function openEditSheet(id) {
   fillForm(m || normalize({ status: "idle", lossPct: DEFAULT_LOSS }));
   $("btnDelete").hidden = !m;
   $("qKg").value = "";
-  $("liftSec").style.opacity = m ? "1" : "0.55";
+  $("liftSec").style.opacity = m ? "1" : "0.6";
 
   renderCalcPanel();
   renderLog();
