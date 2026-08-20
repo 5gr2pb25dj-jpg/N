@@ -674,6 +674,84 @@
   }
   .gnote b { color: #fff; font-weight: 700; }
 
+  /* ---------------- 生産開始の演出 ---------------- */
+  .startfx {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(8, 9, 11, 0.94);
+    display: grid; place-items: center;
+    overflow: hidden;
+    opacity: 0;
+  }
+  .startfx.run { animation: fxIn 0.18s ease forwards, fxOut 0.4s 1.45s ease forwards; }
+  @keyframes fxIn { to { opacity: 1; } }
+  @keyframes fxOut { to { opacity: 0; } }
+
+  /* 中央から左右へ走る線 */
+  .sfx-line {
+    position: absolute; left: 50%; right: 50%; height: 2px;
+    background: #ffd200;
+    box-shadow: 0 0 14px rgba(255, 210, 0, 0.6);
+  }
+  .sfx-line.a { top: calc(50% - 46px); }
+  .sfx-line.b { top: calc(50% + 46px); }
+  .startfx.run .sfx-line { animation: fxSweep 0.5s 0.08s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  @keyframes fxSweep { to { left: 0; right: 0; } }
+
+  /* 角の括弧 */
+  .sfx-br {
+    position: absolute; width: 20px; height: 20px;
+    border: 2px solid #ffd200; opacity: 0;
+  }
+  .sfx-br.tl { top: calc(50% - 46px); left: 26px; border-right: none; border-bottom: none; }
+  .sfx-br.tr { top: calc(50% - 46px); right: 26px; border-left: none; border-bottom: none; }
+  .sfx-br.bl { bottom: calc(50% - 46px); left: 26px; border-right: none; border-top: none; }
+  .sfx-br.br { bottom: calc(50% - 46px); right: 26px; border-left: none; border-top: none; }
+  .startfx.run .sfx-br { animation: fxFade 0.35s 0.5s ease forwards; }
+  @keyframes fxFade { to { opacity: 1; } }
+
+  .sfx-body { position: relative; z-index: 2; text-align: center; padding: 0 24px; }
+  .sfx-label {
+    display: block; font-size: 10px; letter-spacing: 0.28em;
+    color: #ffd200; font-weight: 700; opacity: 0;
+  }
+  .startfx.run .sfx-label { animation: fxFade 0.3s 0.42s ease forwards; }
+  .sfx-sku {
+    display: block; font-size: 34px; font-weight: 300; color: #fff;
+    letter-spacing: 0.06em; line-height: 1.2; margin-top: 7px;
+    opacity: 0;
+  }
+  .startfx.run .sfx-sku { animation: fxRise 0.45s 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  @keyframes fxRise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+  .sfx-sub {
+    display: block; font-size: 12px; color: rgba(255, 255, 255, 0.6);
+    font-weight: 600; margin-top: 8px; opacity: 0;
+  }
+  .startfx.run .sfx-sub { animation: fxFade 0.35s 0.72s ease forwards; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .startfx.run { animation: fxIn 0.01s forwards, fxOut 0.3s 0.7s forwards; }
+    .startfx.run .sfx-line { animation: fxSweep 0.01s forwards; }
+    .startfx.run .sfx-br,
+    .startfx.run .sfx-label,
+    .startfx.run .sfx-sku,
+    .startfx.run .sfx-sub { animation: fxFade 0.01s forwards; }
+  }
+
+  /* ---------------- 履歴 ---------------- */
+  .hist-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0; border-bottom: 1px solid var(--line);
+    font-size: 12px;
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item .sku { font-weight: 800; flex: none; }
+  .hist-item .pd { font-size: 10px; color: var(--ink-2); font-weight: 600; }
+  .hist-item .res { margin-left: auto; font-weight: 700; flex: none; }
+  .badge-part {
+    flex: none; font-size: 9px; font-weight: 700; color: #fff;
+    background: var(--st-changeover); padding: 1px 5px;
+  }
+
   /* ---------------- 起動画面 ---------------- */
   .boot {
     --boot: #ffd200;
@@ -1136,9 +1214,18 @@
         </div>
         <p class="hint">次の品番の糸を先に手配するための必要量です。</p>
 
-        <button class="btn" type="button" id="btnPromote" style="margin-top:11px; width:100%;">
-          次の品番に切り替える
+        <button class="btn btn-primary" type="button" id="btnPromote" style="margin-top:11px; width:100%;">
+          この品番を開始する
         </button>
+        <p class="hint" id="promoteHint" style="margin-top:6px;"></p>
+      </div>
+    </div>
+
+    <!-- 履歴 -->
+    <div class="sec" id="histSec">
+      <div class="sec-l"><h3>履歴</h3><span class="micro">past</span></div>
+      <div class="sec-r">
+        <div id="histBody"></div>
       </div>
     </div>
 
@@ -1203,6 +1290,19 @@
     </div>
   </div>
 </form>
+
+<!-- 生産開始の演出 -->
+<div class="startfx" id="startFx" hidden aria-hidden="true">
+  <span class="sfx-line a"></span>
+  <span class="sfx-line b"></span>
+  <span class="sfx-br tl"></span><span class="sfx-br tr"></span>
+  <span class="sfx-br bl"></span><span class="sfx-br br"></span>
+  <div class="sfx-body">
+    <span class="sfx-label">operation start</span>
+    <span class="sfx-sku" id="sfxSku">—</span>
+    <span class="sfx-sub" id="sfxSub"></span>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status"></div>
 
@@ -2106,6 +2206,17 @@ function renderCalcPanel() {
       </tr>`;
   }).join("");
 
+  // 開始ボタンの案内。途中切り替えになる場合は事前に伝える
+  const hint = $("promoteHint");
+  if (!n.sku && n.rolls === 0) {
+    hint.textContent = "次の品番を入力すると、ここから開始できます。";
+  } else if (m.rolls > 0 && c.remainRolls > 0) {
+    hint.textContent = `現在の「${m.sku || "未設定"}」は残り${Math.round(c.remainRolls)}反あります。`
+      + "開始すると途中切り替えになり、実績は履歴に残ります。";
+  } else {
+    hint.textContent = "開始すると次の品番が現在のオーダーになり、開始日は今日に設定されます。";
+  }
+
   $("cBody").innerHTML = YARNS.map(y => {
     const n = c.need[y.key];
     const hasOrder = num(m.ordered[y.key]) > 0;
@@ -2163,6 +2274,29 @@ function renderLog() {
   });
 }
 
+// 過去のオーダー（途中で切り替えたものは「中断」として残る）
+function renderHistory() {
+  const box = $("histBody");
+  const m = editingId ? machines.find(x => x.id === editingId) : null;
+  const hist = m ? m.history : [];
+
+  if (!m || hist.length === 0) {
+    box.innerHTML = `<div class="log-empty">まだ履歴はありません。品番を切り替えると、それまでの実績がここに残ります。</div>`;
+    return;
+  }
+
+  box.innerHTML = hist.slice(0, 6).map(h => {
+    const period = [h.startDate, h.closedAt].filter(Boolean).map(mdLabel).join(" − ");
+    return `
+      <div class="hist-item">
+        <span class="sku">${h.sku ? escapeHtml(h.sku) : "品番未設定"}</span>
+        ${h.partial ? `<span class="badge-part">中断</span>` : ""}
+        <span class="pd">${escapeHtml(period)}</span>
+        <span class="res num">${Math.round(num(h.producedRolls))}/${Math.round(num(h.rolls))}反</span>
+      </div>`;
+  }).join("");
+}
+
 function openEditSheet(id) {
   editingId = id || null;
   const m = id ? machines.find(x => x.id === id) : null;
@@ -2176,6 +2310,7 @@ function openEditSheet(id) {
 
   renderCalcPanel();
   renderLog();
+  renderHistory();
 
   editOverlay.classList.add("open");
   editSheet.classList.add("open");
@@ -2290,7 +2425,24 @@ $("btnDelete").addEventListener("click", () => {
   }
 });
 
-/* ---- 次の品番へ切り替える（現在のオーダーは履歴に残す） ---- */
+/* ---- 生産開始の演出 ---- */
+let fxTimer = null;
+function showStartFx(sku, sub) {
+  const fx = $("startFx");
+  $("sfxSku").textContent = sku || "新しい品番";
+  $("sfxSub").textContent = sub || "";
+  fx.hidden = false;
+  fx.classList.remove("run");
+  void fx.offsetWidth; // アニメーションを巻き戻す
+  fx.classList.add("run");
+  clearTimeout(fxTimer);
+  fxTimer = setTimeout(() => {
+    fx.hidden = true;
+    fx.classList.remove("run");
+  }, 1900);
+}
+
+/* ---- 次の品番を開始する（途中でも切り替えられる） ---- */
 $("btnPromote").addEventListener("click", () => {
   if (!editingId) { showToast("先に保存してください", true); return; }
   const i = machines.findIndex(x => x.id === editingId);
@@ -2301,25 +2453,42 @@ $("btnPromote").addEventListener("click", () => {
     showToast("次の品番が入力されていません", true);
     return;
   }
-  const msg = `現在の品番「${m.sku || "未設定"}」を終了し、`
-    + `「${m.next.sku || "次の品番"}」に切り替えます。\n`
-    + `現在の水揚げ記録は履歴に移動します。よろしいですか？`;
+
+  const cur = calc(m);
+  const hadOrder = m.rolls > 0 || m.sku;
+  // 残りがある状態での切り替えは「途中切り替え」として扱う
+  const partial = m.rolls > 0 && cur.remainRolls > 0;
+
+  let msg = `「${m.next.sku || "次の品番"}」を開始します。\n`;
+  if (partial) {
+    msg = `現在の「${m.sku || "未設定"}」は ${Math.round(cur.producedRolls)}/${m.rolls}反`
+      + `（残り${Math.round(cur.remainRolls)}反）です。\n`
+      + `途中で切り替えて「${m.next.sku || "次の品番"}」を開始します。\n`
+      + `実績は履歴に残ります。よろしいですか？`;
+  } else if (hadOrder) {
+    msg += `現在の「${m.sku || "未設定"}」は履歴に移動します。よろしいですか？`;
+  }
   if (!confirm(msg)) return;
 
-  // 終わったオーダーを履歴に残す
-  m.history.unshift({
-    sku: m.sku, rolls: m.rolls, weightPerRoll: m.weightPerRoll,
-    startDate: m.startDate, endDate: m.nextChange,
-    producedRolls: m.producedRolls, closedAt: todayStr(),
-    log: m.log,
-  });
+  // 終わった（または中断した）オーダーを履歴に残す
+  if (hadOrder) {
+    m.history.unshift({
+      sku: m.sku, rolls: m.rolls, weightPerRoll: m.weightPerRoll,
+      startDate: m.startDate, endDate: m.nextChange,
+      producedRolls: m.producedRolls,
+      remainRolls: cur.remainRolls,
+      partial,
+      closedAt: todayStr(),
+      log: m.log,
+    });
+  }
 
   const n = m.next;
   m.sku = n.sku;
   m.rolls = n.rolls;
   m.weightPerRoll = n.weightPerRoll;
   m.totalKg = n.rolls * n.weightPerRoll;
-  m.startDate = n.startDate || todayStr();
+  m.startDate = todayStr(); // 実際に開始した日
   m.nextChange = n.endDate;
   m.lossPct = n.lossPct;
   m.ratio = { ...n.ratio };
@@ -2329,15 +2498,17 @@ $("btnPromote").addEventListener("click", () => {
   m.producedKg = 0;
   m.log = [];
   m.next = normalizeOrder({});
-  m.status = "changeover";
+  m.status = "running";
 
   if (saveMachines()) {
     fillForm(m);
     renderCountOptions();
     renderCalcPanel();
     renderLog();
+    renderHistory();
     renderAll();
-    showToast(`${m.sku || "次の品番"} に切り替えました`);
+    showStartFx(m.sku, `${m.rolls}反 ／ ${fmt(m.totalKg)}kg`);
+    showToast(partial ? "途中で切り替えて開始しました" : "生産を開始しました");
   }
 });
 
