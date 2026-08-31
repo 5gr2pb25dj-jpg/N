@@ -86,7 +86,10 @@
 
   body {
     position: relative;
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    /* 欧文はSF Pro、和文はヒラギノに落ちるよう順に並べる。
+       字ごとに前から探されるので、この順で欧文と和文が別々に決まる */
+    font-family: -apple-system, BlinkMacSystemFont, system-ui,
+                 "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
     color: var(--ink);
     padding-bottom: calc(122px + env(safe-area-inset-bottom));
     -webkit-font-smoothing: antialiased;
@@ -121,7 +124,12 @@
     font-weight: 600;
     line-height: 1.4;
   }
+  /* 数字は桁が揃うように等幅で出す */
   .num { font-variant-numeric: tabular-nums; }
+  .kpi .v, .lift-head .big, .lift-head .rest b, .calc-row .v,
+  .yarn-cell .v, .sum-row b, .log-item .kg {
+    font-variant-numeric: tabular-nums;
+  }
 
   /* ---------------- ヘッダー ---------------- */
   header {
@@ -166,7 +174,7 @@
   .kpi .tx { min-width: 0; display: block; }
   .kpi .v {
     display: block;
-    font-size: 15px; font-weight: 700; color: #f2f3f4; line-height: 1.15;
+    font-size: 17px; font-weight: 300; color: #f2f3f4; line-height: 1.15;
     white-space: nowrap;
   }
   .kpi .v small { font-size: 10px; color: rgba(255, 255, 255, 0.6); font-weight: 600; }
@@ -265,13 +273,16 @@
     color: #fff;
     background: var(--v5);
   }
-  .btile:active { background: #2a2c2f; }
+  .btile:active { filter: brightness(1.35); }
 
-  /* 状態は面の明るさで示す。停止しているものほど沈む */
-  .btile[data-s="running"]    { background: #26292c; }
-  .btile[data-s="changeover"] { background: #232527; }
-  .btile[data-s="stopped"]    { background: #1a1b1d; }
+  /* 状態は面の明るさで示す。稼働中がいちばん明るく、計画停止が最も沈む。
+     並べたときに一目で差が出るよう、段の幅を十分に取る */
+  .btile[data-s="running"]    { background: #3d4247; }
+  .btile[data-s="changeover"] { background: #2d3134; }
+  .btile[data-s="stopped"]    { background: #202225; }
   .btile[data-s="idle"]       { background: #161719; }
+  .btile[data-s="idle"] .tsku,
+  .btile[data-s="stopped"] .tsku { color: rgba(255, 255, 255, 0.72); }
 
   .btile .tt { display: flex; align-items: baseline; gap: 5px; }
   .btile .tt b {
@@ -440,7 +451,7 @@
     padding: 5px 6px;
   }
   .yarn-cell .k { font-size: 9px; color: var(--ink-2); font-weight: 600; }
-  .yarn-cell .v { font-size: 13px; font-weight: 800; line-height: 1.2; }
+  .yarn-cell .v { font-size: 15px; font-weight: 300; line-height: 1.2; }
   .yarn-cell .v small { font-size: 9px; color: var(--ink-2); font-weight: 600; }
 
   .card .note {
@@ -558,7 +569,7 @@
   /* 計算パネル */
   .calc-row { display: flex; align-items: baseline; gap: 8px; font-size: 12px; }
   .calc-row .k { color: var(--ink-2); font-weight: 600; }
-  .calc-row .v { margin-left: auto; font-weight: 800; font-size: 15px; }
+  .calc-row .v { margin-left: auto; font-weight: 300; font-size: 17px; }
 
   .calc-table { margin-top: 9px; }
   .calc-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -589,10 +600,10 @@
 
   /* 水揚げ */
   .lift-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
-  .lift-head .big { font-size: 25px; font-weight: 800; line-height: 1.1; }
+  .lift-head .big { font-size: 28px; font-weight: 300; line-height: 1.1; }
   .lift-head .big small { font-size: 12px; color: var(--ink-2); font-weight: 700; }
   .lift-head .rest { margin-left: auto; font-size: 11px; color: var(--ink-2); font-weight: 600; }
-  .lift-head .rest b { color: var(--accent); font-size: 15px; font-weight: 800; }
+  .lift-head .rest b { color: var(--accent); font-size: 17px; font-weight: 300; }
   .lift-sub {
     display: flex; justify-content: space-between;
     font-size: 11px; color: var(--ink-2); font-weight: 600;
@@ -3787,7 +3798,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-11";
+const APP_VERSION = "2026.08.31-12";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
