@@ -962,7 +962,7 @@
   /* ---------------- 起動画面 ---------------- */
   .boot {
     position: fixed; inset: 0; z-index: 100;
-    background: #0a0d11 url("boot-sky.jpg?v=2") center/cover no-repeat;
+    background: #0a0d11 url("boot-sky.jpg?v=3") center/cover no-repeat;
     opacity: 1;
     transition: opacity 0.5s ease;
     cursor: pointer;
@@ -3858,7 +3858,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-7";
+const APP_VERSION = "2026.08.31-8";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {

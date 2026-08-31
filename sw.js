@@ -6,7 +6,7 @@
    それを表示する。圏外や電波が弱い工場内では、直前に取得したものを
    キャッシュから出して動かし続ける。
    ============================================================ */
-const VERSION = "2026.08.31-7";
+const VERSION = "2026.08.31-8";
 const CACHE = `factory-${VERSION}`;
 
 // 圏外でも起動できるように最初から持っておくもの
@@ -14,7 +14,7 @@ const SHELL = [
   "./",
   "./index.html",
   "./bg.jpg?v=2",
-  "./boot-sky.jpg?v=2",
+  "./boot-sky.jpg?v=3",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
