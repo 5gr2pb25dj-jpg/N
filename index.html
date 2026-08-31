@@ -962,7 +962,7 @@
   /* ---------------- 起動画面 ---------------- */
   .boot {
     position: fixed; inset: 0; z-index: 100;
-    background: #0a0d11 url("boot-sky.jpg?v=1") center/cover no-repeat;
+    background: #0a0d11 url("boot-sky.jpg?v=2") center/cover no-repeat;
     opacity: 1;
     transition: opacity 0.5s ease;
     cursor: pointer;
@@ -974,12 +974,12 @@
   .boot::before {
     content: ""; position: absolute; inset: 0;
     background: linear-gradient(180deg,
-      rgba(8, 11, 15, 0.58) 0%,
-      rgba(8, 11, 15, 0.26) 28%,
-      rgba(8, 11, 15, 0.10) 52%,
-      rgba(8, 11, 15, 0.16) 68%,
-      rgba(8, 11, 15, 0.62) 84%,
-      rgba(8, 11, 15, 0.90) 100%);
+      rgba(8, 11, 15, 0.42) 0%,
+      rgba(8, 11, 15, 0.14) 26%,
+      rgba(8, 11, 15, 0.04) 48%,
+      rgba(8, 11, 15, 0.10) 64%,
+      rgba(8, 11, 15, 0.46) 82%,
+      rgba(8, 11, 15, 0.80) 100%);
   }
   .boot > * { position: relative; z-index: 1; }
 
@@ -3858,7 +3858,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-6";
+const APP_VERSION = "2026.08.31-7";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
