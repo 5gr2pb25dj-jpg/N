@@ -959,9 +959,141 @@
   }
   .btn:disabled { opacity: 0.4; cursor: default; }
 
+  /* ---------------- 起動画面 ---------------- */
+  .boot {
+    position: fixed; inset: 0; z-index: 100;
+    background: #0a0d11 url("boot-sky.jpg?v=1") center/cover no-repeat;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .boot.done { opacity: 0; pointer-events: none; }
+
+  /* 空が淡いので、文字が読めるように暗幕を重ねる */
+  .boot::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg,
+      rgba(8, 11, 15, 0.58) 0%,
+      rgba(8, 11, 15, 0.26) 28%,
+      rgba(8, 11, 15, 0.10) 52%,
+      rgba(8, 11, 15, 0.16) 68%,
+      rgba(8, 11, 15, 0.62) 84%,
+      rgba(8, 11, 15, 0.90) 100%);
+  }
+  .boot > * { position: relative; z-index: 1; }
+
+  .boot-center {
+    position: absolute; left: 0; right: 0;
+    top: calc(11% + env(safe-area-inset-top));
+    text-align: center;
+    opacity: 0;
+    animation: bootIn 0.7s 0.15s ease forwards;
+  }
+  @keyframes bootIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes bootFade { to { opacity: 1; } }
+
+  .boot-eyebrow {
+    display: block; font-size: 9px; letter-spacing: 0.24em;
+    color: rgba(255, 255, 255, 0.62); font-weight: 600;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  }
+  .boot-name {
+    display: block; font-size: 17px; font-weight: 500; color: #fff;
+    letter-spacing: 0.34em; margin-top: 3px;
+    text-indent: 0.34em; /* 字間の余りぶんの左寄りを打ち消す */
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  }
+  .boot-no {
+    display: block; font-size: 52px; font-weight: 250; color: #fff;
+    line-height: 1.0; margin-top: 8px;
+    letter-spacing: 0.08em; text-indent: 0.08em;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 3px 22px rgba(0, 0, 0, 0.7);
+  }
+  .boot-no small {
+    font-size: 15px; font-weight: 400; vertical-align: 22px;
+    opacity: 0.55; letter-spacing: 0;
+  }
+
+  /* 点検ログ */
+  .boot-log {
+    position: absolute; left: 10%; right: 10%; top: 40%;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10.5px; line-height: 2.1;
+    color: rgba(198, 228, 245, 0.92);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 12px rgba(0, 0, 0, 0.8);
+  }
+  .boot-log div { white-space: nowrap; overflow: hidden; }
+  .boot-log em { font-style: normal; color: rgba(255, 255, 255, 0.35); }
+  .boot-log b { float: right; font-weight: 400; color: var(--accent); }
+  .boot-log b.w { color: #e8b23a; }
+
+  /* 進捗 */
+  .boot-bar {
+    position: absolute; left: 10%; right: 10%; bottom: 17%;
+    opacity: 0; animation: bootFade 0.5s 0.5s ease forwards;
+  }
+  .boot-bar .rail { height: 1px; background: rgba(255, 255, 255, 0.18); position: relative; }
+  .boot-bar .fill {
+    position: absolute; left: 0; top: 0; height: 1px; width: 0;
+    background: var(--accent); box-shadow: 0 0 8px rgba(41, 161, 224, 0.85);
+  }
+  .boot-bar .row {
+    display: flex; justify-content: space-between; margin-top: 7px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 9.5px; letter-spacing: 0.14em;
+    color: rgba(255, 255, 255, 0.5); font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.85);
+  }
+  .boot-bar .row b { color: var(--accent); font-weight: 400; }
+
+  .boot-foot {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    display: flex; align-items: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    opacity: 0; animation: bootFade 0.6s 0.8s ease forwards;
+  }
+  .boot-brand {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.14em;
+    color: rgba(255, 255, 255, 0.78); line-height: 1.5;
+  }
+  .boot-brand span {
+    display: block; font-size: 8px; font-weight: 600; letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.34);
+  }
+  .boot-ver {
+    margin-left: auto; text-align: right;
+    font-size: 9px; color: rgba(255, 255, 255, 0.38); line-height: 1.6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .boot-center, .boot-bar, .boot-foot { animation-duration: 0.01s; }
+  }
+
 </style>
 </head>
 <body>
+
+<!-- ============ 起動画面 ============ -->
+<div class="boot" id="boot" role="status" aria-label="起動中">
+  <div class="boot-center">
+    <span class="boot-eyebrow">サーバー</span>
+    <span class="boot-name">N</span>
+    <span class="boot-no"><small>#</small>01</span>
+  </div>
+  <div class="boot-log" id="bootLog"></div>
+  <div class="boot-bar">
+    <div class="rail"><div class="fill" id="bootFill"></div></div>
+    <div class="row"><span>LINK N</span><b id="bootPct">0%</b></div>
+  </div>
+  <div class="boot-foot">
+    <span class="boot-brand">FACTORY OPERATION<span>丸編み生産管理システム</span></span>
+    <span class="boot-ver" id="bootVer">Ver 1.0</span>
+  </div>
+</div>
 
 <header>
   <div class="topbar">
@@ -3647,12 +3779,86 @@ $("btnBackupClose").addEventListener("click", closeBackupSheet);
 backupOverlay.addEventListener("click", closeBackupSheet);
 
 /* ============================================================
+   起動画面：点検ログ
+   背景は静止画1枚、動くのは文字と進捗バーだけ。
+   描画の負荷はほぼ無い。
+   ============================================================ */
+(function () {
+  const boot = document.getElementById("boot");
+  if (!boot) return;
+
+  const logEl = document.getElementById("bootLog");
+  const fill = document.getElementById("bootFill");
+  const pctEl = document.getElementById("bootPct");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DURATION = reduce ? 500 : 1500;
+
+  // 表示する点検項目。右側は実際の登録内容から作る
+  function lines() {
+    const n = machines.length;
+    const running = machines.filter(m => m.status === "running").length;
+    // 糸が足りない品番の数を数える
+    let low = 0;
+    try {
+      for (const e of aggregateByCount()) if (e.onHand > 0 && e.onHand < e.rest) low++;
+    } catch (err) { /* 集計できなくても起動は進める */ }
+    return [
+      ["spindle ctrl", "OK", ""],
+      ["yarn feed x4", "OK", ""],
+      ["tension sensor", "OK", ""],
+      ["unit register", n > 0 ? running + "/" + n : "0", ""],
+      ["stock sync", low > 0 ? low + " LOW" : "OK", low > 0 ? "w" : ""],
+      ["link N", "READY", ""],
+    ];
+  }
+
+  // 登録内容は読み込みの後に入るので、最初の1コマ目で作る
+  let LOG = null, rows = null;
+
+  let finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    boot.classList.add("done");
+    setTimeout(() => { boot.style.display = "none"; }, 560);
+  }
+  boot.addEventListener("click", finish);
+
+  const start = performance.now();
+  function tick(now) {
+    if (!LOG) {
+      LOG = lines();
+      logEl.innerHTML = LOG.map(() => "<div></div>").join("");
+      rows = [...logEl.children];
+    }
+    const t = now - start;
+    const e = Math.min(1, t / DURATION);
+    const eased = 1 - Math.pow(1 - e, 2.1);
+    fill.style.width = (eased * 100) + "%";
+    pctEl.textContent = Math.round(eased * 100) + "%";
+
+    rows.forEach((r, i) => {
+      const q = t - 150 - i * 145;
+      if (q < 0) { r.textContent = ""; return; }
+      const [name, val, cls] = LOG[i];
+      const n = Math.min(name.length, Math.floor(q / 11));   // 文字が左から出る
+      r.innerHTML = (q > name.length * 11 + 55 ? '<b class="' + cls + '">' + val + "</b>" : "")
+        + "<em>&gt;</em> " + name.slice(0, n);
+    });
+
+    if (e < 1) requestAnimationFrame(tick);
+    else if (!finished) setTimeout(finish, reduce ? 0 : 260);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* ============================================================
    バージョンと更新の取り込み
    ホーム画面から開いたときに古い画面のままになるのを防ぐため、
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-5";
+const APP_VERSION = "2026.08.31-6";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
