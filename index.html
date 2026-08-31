@@ -1085,7 +1085,7 @@
   <div class="boot-msg">生産管理システムに接続中</div>
   <div class="boot-foot">
     <span class="boot-brand">FACTORY OPERATION<span>丸編み生産管理システム</span></span>
-    <span class="boot-ver">Ver 1.0</span>
+    <span class="boot-ver" id="bootVer">Ver 1.0</span>
   </div>
 </div>
 
@@ -3403,7 +3403,7 @@ function markBackedUp() {
 
 function renderBackupStat() {
   const el = $("bkStat");
-  if (el) el.textContent = `${machines.length}号機ぶんのデータ ／ ${backupLabel()}`;
+  if (el) el.textContent = `${machines.length}号機ぶんのデータ ／ ${backupLabel()} ／ Ver ${APP_VERSION}`;
 }
 
 function backupPayload() {
@@ -3549,6 +3549,28 @@ $("bkFile").addEventListener("change", e => {
 });
 $("btnBackupClose").addEventListener("click", closeBackupSheet);
 backupOverlay.addEventListener("click", closeBackupSheet);
+
+/* ============================================================
+   バージョンと更新の取り込み
+   ホーム画面から開いたときに古い画面のままになるのを防ぐため、
+   Service Worker で画面はネットワーク優先で取りに行く。
+   圏外のときは直前に取得したものを使う。
+   ============================================================ */
+const APP_VERSION = "2026.08.31-2";
+
+(function showVersion() {
+  const el = $("bootVer");
+  if (el) el.textContent = "Ver " + APP_VERSION;
+})();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    // updateViaCache: "none" で sw.js 自体もキャッシュから読ませない
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+      .then(reg => reg.update())
+      .catch(() => { /* 使えない環境でも通常どおり動く */ });
+  });
+}
 
 /* ============================================================
    検索 / トースト / 起動
