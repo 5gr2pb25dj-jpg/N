@@ -6,7 +6,7 @@
    それを表示する。圏外や電波が弱い工場内では、直前に取得したものを
    キャッシュから出して動かし続ける。
    ============================================================ */
-const VERSION = "2026.08.31-15";
+const VERSION = "2026.08.31-16";
 const CACHE = `factory-${VERSION}`;
 
 // 圏外でも起動できるように最初から持っておくもの
@@ -16,10 +16,10 @@ const SHELL = [
   "./bg.jpg?v=2",
   "./boot-sky.jpg?v=3",
   "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./apple-touch-icon.png",
-  "./favicon.png",
+  "./icon-192.png?v=2",
+  "./icon-512.png?v=2",
+  "./apple-touch-icon.png?v=2",
+  "./favicon.png?v=2",
 ];
 
 self.addEventListener("install", e => {
