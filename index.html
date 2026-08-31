@@ -275,12 +275,15 @@
   }
   .btile:active { filter: brightness(1.35); }
 
-  /* 状態は面の明るさで示す。稼働中がいちばん明るく、計画停止が最も沈む。
-     並べたときに一目で差が出るよう、段の幅を十分に取る */
-  .btile[data-s="running"]    { background: #3d4247; }
-  .btile[data-s="changeover"] { background: #2d3134; }
-  .btile[data-s="stopped"]    { background: #202225; }
-  .btile[data-s="idle"]       { background: #161719; }
+  /* 状態は面の明るさで分ける。稼働中がいちばん明るく、計画停止が最も沈む。
+     面の中は左上から右下へ落とし、光の当たった板に見せる。
+     ただしタイル内の振れ幅は状態間の段差より小さく抑えること。
+     でないと明るい面の暗い角と、暗い面の明るい角が同じ明度になり、
+     状態の区別が崩れる。 */
+  .btile[data-s="running"]    { background: linear-gradient(155deg, #43484e, #3a3f44); }
+  .btile[data-s="changeover"] { background: linear-gradient(155deg, #32363a, #292d30); }
+  .btile[data-s="stopped"]    { background: linear-gradient(155deg, #232629, #1c1e21); }
+  .btile[data-s="idle"]       { background: linear-gradient(155deg, #181a1c, #131416); }
   .btile[data-s="idle"] .tsku,
   .btile[data-s="stopped"] .tsku { color: rgba(255, 255, 255, 0.72); }
 
@@ -3798,7 +3801,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-12";
+const APP_VERSION = "2026.08.31-13";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
