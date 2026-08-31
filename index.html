@@ -3200,6 +3200,27 @@ function openEditSheet(id) {
   editOverlay.classList.add("open");
   editSheet.classList.add("open");
   editSheet.scrollTop = 0;
+  markEditSaved();
+}
+
+/* ---- 入力途中の取りこぼしを防ぐ ----
+   開いたときの内容を控えておき、閉じるときに見比べる。
+   水揚げの記録や完了・開始はその場で保存されるので、
+   そのあとは控えを取り直して「変更あり」にならないようにする。 */
+let editBaseline = "";
+
+function editSnapshot() {
+  return [...editSheet.querySelectorAll("input, select, textarea")]
+    .map(el => (el.type === "checkbox" ? String(el.checked) : el.value))
+    .join("\u0001");
+}
+function markEditSaved() { editBaseline = editSnapshot(); }
+function editIsDirty() { return editSnapshot() !== editBaseline; }
+
+// 閉じる操作から呼ぶ。書きかけがあれば一度だけ確かめる
+function tryCloseEditSheet() {
+  if (editIsDirty() && !confirm("入力した内容はまだ保存されていません。破棄して閉じますか？")) return;
+  closeEditSheet();
 }
 
 function closeEditSheet() {
@@ -3254,6 +3275,7 @@ $("qAdd").addEventListener("click", () => {
     renderCalcPanel();
     renderLog();
     renderAll();
+    markEditSaved();
     showToast(`${added}反 を記録しました`);
   }
 });
@@ -3271,10 +3293,11 @@ function removeLogEntry(idx) {
   m.producedKg = m.producedRolls * num(m.weightPerRoll);
 
   if (saveMachines()) {
-    syncSlider(m.rolls, m.producedRolls);
+    syncSlider(m.rolls, m.producedRolls);   // スライダーは入力欄なので控えを取り直す
     renderCalcPanel();
     renderLog();
     renderAll();
+    markEditSaved();
     showToast("記録を削除しました");
   }
 }
@@ -3399,6 +3422,7 @@ $("btnPromote").addEventListener("click", () => {
     renderLog();
     renderHistory();
     renderAll();
+    markEditSaved();
     showStartFx(m.sku, `${m.rolls}反 ／ ${fmt(m.totalKg)}kg`);
     showToast(partial ? "途中で切り替えて開始しました" : "生産を開始しました");
   }
@@ -3467,6 +3491,7 @@ $("btnComplete").addEventListener("click", () => {
     renderLog();
     renderHistory();
     renderAll();
+    markEditSaved();
     const nx = m.next.sku || (m.next.rolls > 0 ? "次の品番" : "");
     showToast(nx
       ? `完了しました。「${nx}」は下の「この品番を開始する」から始められます`
@@ -3494,8 +3519,8 @@ $("btnHandReset").addEventListener("click", () => {
   renderCalcPanel();
 });
 
-$("btnCancel").addEventListener("click", closeEditSheet);
-editOverlay.addEventListener("click", closeEditSheet);
+$("btnCancel").addEventListener("click", tryCloseEditSheet);
+editOverlay.addEventListener("click", tryCloseEditSheet);
 $("fabAdd").addEventListener("click", () => openEditSheet(null));
 
 /* ============================================================
@@ -3741,7 +3766,7 @@ $("bkFile").addEventListener("change", e => {
 $("btnBackupClose").addEventListener("click", closeBackupSheet);
 
 /* ---- 見出しの閉じるボタン。最下部まで送らなくても閉じられるように ---- */
-$("closeEdit").addEventListener("click", closeEditSheet);
+$("closeEdit").addEventListener("click", tryCloseEditSheet);
 $("closeBulk").addEventListener("click", closeBulkSheet);
 $("closeBackup").addEventListener("click", closeBackupSheet);
 backupOverlay.addEventListener("click", closeBackupSheet);
@@ -3820,7 +3845,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-14";
+const APP_VERSION = "2026.08.31-15";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
