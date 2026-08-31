@@ -512,9 +512,20 @@
   .sheet-head {
     position: sticky; top: 0; z-index: 2;
     background: rgba(28, 31, 36, 0.97);
-    padding: 11px 12px;
+    padding: 8px 8px 8px 12px;
     display: flex; align-items: center; gap: 9px;
   }
+  /* 閉じるボタン。見出しは sticky なので、どこまで送っても届く。
+     角丸は使わない意匠だが、閉じるボタンだけは参照画面でも円 */
+  .sheet-close {
+    flex: none; margin-left: 2px;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; cursor: pointer;
+    background: rgba(255, 255, 255, 0.13);
+    color: #fff; font-size: 15px; line-height: 1;
+    display: grid; place-items: center;
+  }
+  .sheet-close:active { background: rgba(255, 255, 255, 0.28); }
   .sheet-head h2 { font-size: 14px; font-weight: 700; color: #f2f3f4; letter-spacing: 0.02em; }
   .sheet-head .micro { margin-left: auto; color: rgba(255, 255, 255, 0.5); }
   .sheet-head .dot { width: 4px; height: 15px; background: var(--accent); flex: none; }
@@ -1132,6 +1143,7 @@
     <span class="dot"></span>
     <h2 id="editTitle">機械を追加</h2>
     <span class="micro">unit config</span>
+    <button class="sheet-close" type="button" id="closeEdit" aria-label="閉じる">✕</button>
   </div>
 
   <div class="sheet-body">
@@ -1549,6 +1561,7 @@
     <span class="dot"></span>
     <h2>一括登録</h2>
     <span class="micro">batch</span>
+    <button class="sheet-close" type="button" id="closeBulk" aria-label="閉じる">✕</button>
   </div>
   <div class="sheet-body">
     <div class="sec">
@@ -1583,6 +1596,7 @@
     <span class="dot"></span>
     <h2>データの保管</h2>
     <span class="micro">backup</span>
+    <button class="sheet-close" type="button" id="closeBackup" aria-label="閉じる">✕</button>
   </div>
   <div class="sheet-body">
     <div class="sec">
@@ -3725,6 +3739,11 @@ $("bkFile").addEventListener("change", e => {
   r.readAsText(f);
 });
 $("btnBackupClose").addEventListener("click", closeBackupSheet);
+
+/* ---- 見出しの閉じるボタン。最下部まで送らなくても閉じられるように ---- */
+$("closeEdit").addEventListener("click", closeEditSheet);
+$("closeBulk").addEventListener("click", closeBulkSheet);
+$("closeBackup").addEventListener("click", closeBackupSheet);
 backupOverlay.addEventListener("click", closeBackupSheet);
 
 /* ============================================================
@@ -3801,7 +3820,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-13";
+const APP_VERSION = "2026.08.31-14";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
