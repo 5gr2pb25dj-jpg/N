@@ -23,23 +23,35 @@
   :root {
     color-scheme: light;
 
+    /* ------------------------------------------------------------
+       黒の濃淡だけで面を作る。飾りではなく「明るさの段差」で区切る。
+       枠線・影・模様に頼らない。
+       ------------------------------------------------------------ */
+    --v0: #ffffff;   /* 最も明るい面（ほぼ使わない） */
+    --v1: #ececec;   /* 明るい面。パネルの地 */
+    --v2: #dcdedf;   /* 明るい面の中の一段沈んだところ */
+    --v3: #c4c6c7;   /* 明るい面の区切り */
+    --v4: #313131;   /* 暗い部品。操作できるもの */
+    --v5: #1e1f21;   /* 暗い面 */
+    --v6: #121315;   /* 最も暗い面・銘板 */
+
     /* 背景（ステージ） */
-    --stage:    #22262b;
+    --stage:    #1a1d20;
 
     /* 浮かぶパネル */
-    --panel:      rgba(238, 238, 236, 0.95);
-    --panel-in:   rgba(255, 255, 255, 0.72);
-    --panel-in-2: rgba(0, 0, 0, 0.045);
-    --line:       rgba(0, 0, 0, 0.10);
-    --line-2:     rgba(0, 0, 0, 0.18);
+    --panel:      var(--v1);
+    --panel-in:   var(--v0);
+    --panel-in-2: var(--v2);
+    --line:       var(--v3);
+    --line-2:     #b3b5b6;
 
     /* 文字 */
     --ink:   #16181a;
     --ink-2: #5c6066;
-    --micro: #9aa0a6;
+    --micro: #8e9296;
 
     /* 暗いパネル・ボタン */
-    --char:    #313131;   /* 操作できるものは暗い炭色 */
+    --char:    var(--v4);
     --char-2:  #4a4a4a;
     --on-char: #f2f3f4;
 
@@ -60,7 +72,8 @@
     --danger: #cf4a3f;
     --good:   #2f8a68;
 
-    --lift: 0 4px 18px rgba(0, 0, 0, 0.38);
+    /* 影は面を持ち上げる最小限にとどめる */
+    --lift: 0 2px 10px rgba(0, 0, 0, 0.30);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -95,18 +108,6 @@
       url("bg.jpg?v=2");
   }
 
-  /* 章選択画面のような、ごく薄い方眼の地紋。無地にしない */
-  body::after {
-    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background-image: url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'>\
-<path d='M18 13.5v9M13.5 18h9' stroke='rgba(255,255,255,0.075)' stroke-width='1'/></svg>");
-    background-size: 36px 36px;
-    background-size: cover, cover;
-    background-position: center center, center center;
-    background-repeat: no-repeat, no-repeat;
-  }
-
   button, input, select, textarea { font: inherit; color: inherit; }
   input, select, textarea { -webkit-appearance: none; appearance: none; }
 
@@ -136,7 +137,6 @@
   .topbar .home {
     width: 38px; height: 32px; flex: none;
     background: rgba(20, 23, 27, 0.72);
-    border: 1px solid rgba(255, 255, 255, 0.14);
     display: grid; place-items: center;
   }
   .topbar .home span {
@@ -159,10 +159,10 @@
     flex: 1; min-width: 0;
     display: flex; align-items: center; gap: 7px;
     background: rgba(20, 23, 27, 0.74);
-    border: 1px solid rgba(255, 255, 255, 0.12);
     padding: 5px 7px;
   }
-  .kpi .ic { width: 16px; height: 16px; flex: none; background: var(--kc); }
+  /* 指標ごとに色を変える意味がないので、明るさの段差だけで示す */
+  .kpi .ic { width: 3px; align-self: stretch; flex: none; background: rgba(255, 255, 255, 0.28); }
   .kpi .tx { min-width: 0; display: block; }
   .kpi .v {
     display: block;
@@ -179,7 +179,6 @@
   .substrip {
     display: flex; gap: 10px; margin-top: 5px;
     background: rgba(20, 23, 27, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.10);
     padding: 6px 9px;
     font-size: 10.5px; color: rgba(255, 255, 255, 0.62);
   }
@@ -249,128 +248,72 @@
 
   main { padding: 4px 12px 12px; display: grid; gap: 8px; }
 
-  /* ---- 基地画面ふうのタイル一覧 ---- */
+  /* ---- 号機タイル ----
+     模様・ピップ・色帯といった飾りは置かない。
+     暗い面の濃さと、文字の大小だけで情報の順位を作る。 */
   .tiles {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
-    gap: 6px;
+    gap: 2px;
   }
   .btile {
     position: relative;
     display: block; width: 100%; text-align: left; cursor: pointer;
-    min-height: 112px;
-    padding: 8px 9px 30px 15px;
+    min-height: 104px;
+    padding: 11px 12px 10px;
     border: none;
     color: #fff;
-    overflow: hidden;
-    background: linear-gradient(158deg,
-      rgba(62, 68, 77, 0.96) 0%,
-      rgba(38, 42, 48, 0.96) 44%,
-      rgba(24, 27, 31, 0.96) 100%);
-    box-shadow: var(--lift), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    background: var(--v5);
   }
-  .btile:active { filter: brightness(1.3); }
-  /* 左端の状態バー */
-  .btile .edge {
-    position: absolute; left: 0; top: 0; bottom: 0; width: 7px;
-    background: var(--st);
-  }
-  /* 奥に薄く敷く設備ふうの模様 */
-  .btile .deco {
-    position: absolute; right: -10px; bottom: 6px;
-    width: 74px; height: 58px; opacity: 0.16; pointer-events: none;
-    background: repeating-linear-gradient(-52deg,
-      rgba(255, 255, 255, 0.9) 0 1px, transparent 1px 8px);
-    clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%, 0 26%);
-  }
-  .btile > * { position: relative; }
+  .btile:active { background: #2a2c2f; }
 
-  /* 号機番号とレベルピップ */
-  .btile .tt { display: flex; align-items: baseline; gap: 4px; }
-  .btile .tt b { font-size: 18px; font-weight: 800; letter-spacing: 0.02em; }
-  .btile .tt i {
-    font-style: normal; font-size: 9.5px; font-weight: 700;
-    color: rgba(255, 255, 255, 0.5);
-  }
-  .btile .pips { display: flex; gap: 1.5px; align-self: center; margin-left: 2px; }
-  .btile .pips s {
-    width: 4px; height: 9px; background: rgba(255, 255, 255, 0.2);
-    text-decoration: none; display: block;
-  }
-  .btile .pips s.on { background: var(--st); }
-  .btile .tup {
-    margin-left: auto; font-size: 10px; font-weight: 700;
-    color: rgba(255, 255, 255, 0.55);
-  }
+  /* 状態は面の明るさで示す。停止しているものほど沈む */
+  .btile[data-s="running"]    { background: #26292c; }
+  .btile[data-s="changeover"] { background: #232527; }
+  .btile[data-s="stopped"]    { background: #1a1b1d; }
+  .btile[data-s="idle"]       { background: #161719; }
 
-  /* 状態の行 */
-  .btile .ts {
-    display: flex; align-items: center; gap: 5px;
-    margin-top: 2px; font-size: 11px; font-weight: 700; color: var(--st);
-  }
-  .btile .ts em { font-style: normal; letter-spacing: -0.08em; font-size: 10px; }
-  .btile .gtag.sm {
-    margin-left: auto;
-    max-width: 6.5em;
-    color: rgba(255, 255, 255, 0.6);
-    border: none;
-    background: transparent;
-    padding: 0;
-    font-size: 9.5px; font-weight: 700;
-  }
-  .btile .gtag.sm::before { content: "#"; opacity: 0.55; }
-
-  /* 品番 */
-  .btile .tsku {
-    display: block; margin-top: 7px;
-    font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.92);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .btile .tsku.none { color: rgba(255, 255, 255, 0.35); font-weight: 600; }
-
-  /* 下段（納期と反数） */
-  .btile .tfoot {
-    display: flex; align-items: flex-end; gap: 6px; margin-top: 5px;
-  }
-  .btile .tdue {
-    font-size: 10px; font-weight: 700; color: rgba(255, 255, 255, 0.5);
-  }
-  .btile .tdue.soon { color: #f0b93f; }
-  .btile .tdue.overdue { color: #ff8072; }
-  .btile .tcnt {
-    margin-left: auto; display: flex; align-items: baseline; gap: 2px;
-    color: #fff;
-  }
-  .btile .tcnt em {
-    font-style: normal; font-size: 9px; font-weight: 700;
-    color: rgba(255, 255, 255, 0.45);
-  }
-  .btile .tcnt b { font-size: 19px; font-weight: 300; line-height: 1; }
-  .btile .tcnt small { font-size: 10px; color: rgba(255, 255, 255, 0.5); font-weight: 700; }
-
-  /* 一番下の進捗バー */
-  .btile .tbar {
-    position: absolute; left: 7px; right: 0; bottom: 20px; height: 3px;
-    background: rgba(255, 255, 255, 0.14);
-  }
-  .btile .tbar i { display: block; height: 100%; background: var(--accent); }
-
-  /* 下端の黒帯。識別番号のチップと機種名を入れる */
-  .btile .tid {
-    position: absolute; left: 7px; right: 0; bottom: 0; height: 20px;
-    background: #0f1114;
-    display: flex; align-items: center; gap: 5px; padding: 0 6px;
-  }
-  .btile .tid s {
-    text-decoration: none; flex: none;
-    font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em;
-    color: #cfd6dc; background: #2c3238; padding: 1px 4px;
+  .btile .tt { display: flex; align-items: baseline; gap: 5px; }
+  .btile .tt b {
+    font-size: 26px; font-weight: 300; letter-spacing: 0.02em; line-height: 1;
     font-variant-numeric: tabular-nums;
   }
-  .btile .tid span {
-    font-size: 8.5px; letter-spacing: 0.04em; color: rgba(255, 255, 255, 0.42);
+  .btile .tt i {
+    font-style: normal; font-size: 9px; font-weight: 600;
+    color: rgba(255, 255, 255, 0.4);
+  }
+  /* 状態はごく小さな塗りの点だけ。文字は添えない */
+  .btile .tt s {
+    text-decoration: none; margin-left: auto;
+    width: 7px; height: 7px; background: var(--st); align-self: center;
+  }
+
+  .btile .tsku {
+    display: block; margin-top: 9px;
+    font-size: 12.5px; font-weight: 600; color: rgba(255, 255, 255, 0.9);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .btile .tsku.none { color: rgba(255, 255, 255, 0.28); font-weight: 500; }
+
+  .btile .tfoot {
+    display: flex; align-items: baseline; gap: 6px; margin-top: 8px;
+  }
+  .btile .tdue { font-size: 10px; color: rgba(255, 255, 255, 0.4); }
+  .btile .tdue.soon { color: #e0a63c; }
+  .btile .tdue.overdue { color: #e0705f; }
+  .btile .tcnt { margin-left: auto; display: flex; align-items: baseline; gap: 1px; }
+  .btile .tcnt b {
+    font-size: 20px; font-weight: 300; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .btile .tcnt small { font-size: 10px; color: rgba(255, 255, 255, 0.42); }
+
+  /* 進捗は面の下端をひと筋だけ明るくして示す */
+  .btile .tbar {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: rgba(255, 255, 255, 0.10);
+  }
+  .btile .tbar i { display: block; height: 100%; background: rgba(255, 255, 255, 0.55); }
 
   /* 案件のバッジ */
   .gtag {
@@ -391,15 +334,6 @@
     cursor: pointer; box-shadow: var(--lift);
   }
   .gbanner .x { margin-left: auto; font-size: 11px; }
-
-  /* 行と行の継ぎ目に丸い穴を開け、鎖のように連結して見せる */
-  .hrow + .hrow { margin-top: 3px; }
-  .hrow + .hrow::before {
-    content: ""; position: absolute; left: 50%; top: -8px;
-    width: 13px; height: 13px; margin-left: -6.5px;
-    background: var(--panel); border: 1px solid var(--line-2);
-    border-radius: 50%; z-index: 2;
-  }
 
   /* ホームの案件行 */
   .hrow .gname { font-size: 12px; font-weight: 800; flex: none; max-width: 7em;
@@ -443,7 +377,6 @@
     width: 100%;
     text-align: left;
     background: var(--panel);
-    border: 1px solid rgba(255, 255, 255, 0.35);
     box-shadow: var(--lift);
     padding: 0 0 10px;
     cursor: pointer;
@@ -542,7 +475,6 @@
   .fab-bulk {
     padding: 8px 13px; font-size: 11px;
     background: rgba(20, 23, 27, 0.86); color: var(--on-char);
-    border: 1px solid rgba(255, 255, 255, 0.16);
   }
 
   /* ---------------- シート ---------------- */
@@ -578,7 +510,6 @@
   /* セクション：左に見出しブロック、右に内容（AK の行レイアウト） */
   .sec {
     background: var(--panel);
-    border: 1px solid rgba(255, 255, 255, 0.4);
     display: grid;
     grid-template-columns: 66px 1fr;
   }
@@ -800,7 +731,6 @@
   .home { padding: 4px 12px 12px; display: grid; gap: 8px; }
   .hcard {
     background: var(--panel);
-    border: 1px solid rgba(255, 255, 255, 0.35);
     box-shadow: var(--lift);
     padding: 11px 12px 12px;
   }
@@ -809,7 +739,8 @@
     font-size: 12px; font-weight: 800; letter-spacing: 0.04em;
     display: flex; align-items: center; gap: 7px; margin-bottom: 8px;
   }
-  .hcard h2 .bar { width: 3px; height: 12px; background: var(--amber); flex: none; }
+  /* 見出しに印は付けない。上の英字ラベルと太さの差で足りる */
+  .hcard h2 .bar { display: none; }
   .hcard h2 .n {
     margin-left: auto; font-size: 11px; font-weight: 700;
     background: var(--char); color: var(--on-char); padding: 2px 7px;
@@ -843,7 +774,6 @@
   .gantt { padding: 4px 12px 12px; }
   .gwrap {
     background: var(--panel);
-    border: 1px solid rgba(255, 255, 255, 0.35);
     box-shadow: var(--lift);
     overflow-x: auto; -webkit-overflow-scrolling: touch;
   }
@@ -1125,15 +1055,15 @@
   </div>
 
   <div class="kpis">
-    <div class="kpi" style="--kc:#29a1e0">
+    <div class="kpi">
       <span class="ic"></span>
       <span class="tx"><span class="v num" id="kpiUptime">–</span><span class="l">平均稼働率</span></span>
     </div>
-    <div class="kpi" style="--kc:#2f8a68">
+    <div class="kpi">
       <span class="ic"></span>
       <span class="tx"><span class="v num" id="kpiRunning">–</span><span class="l">稼働中/全</span></span>
     </div>
-    <div class="kpi" style="--kc:#c8871c">
+    <div class="kpi">
       <span class="ic"></span>
       <span class="tx"><span class="v num" id="kpiChange">–</span><span class="l">今週の予定</span></span>
     </div>
@@ -2133,43 +2063,22 @@ function tileHtml(m) {
   const c = calc(m);
   const days = daysUntil(m.nextChange);
   const dueCls = days === null ? "" : days < 0 ? "overdue" : days <= 7 ? "soon" : "";
-  const dueTxt = days === null ? "予定なし"
-    : days < 0 ? `${-days}日超過` : days === 0 ? "本日交換" : `あと${days}日`;
-
-  const uptime = Math.max(0, Math.min(100, num(m.uptime)));
-  const lit = Math.round(uptime / 20);   // 0〜5個ぶんの点灯
-  const pips = Array.from({ length: 5 },
-    (_, k) => `<s class="${k < lit ? "on" : ""}"></s>`).join("");
-
-  // 状態に応じて矢印の本数を変える（稼働中がいちばん賑やか）
-  const arrow = m.status === "running" ? "▶▶" : m.status === "changeover" ? "▶" : "";
+  const dueTxt = days === null ? "" : days < 0 ? `${-days}日超過` : days === 0 ? "本日" : `あと${days}日`;
 
   return `
-    <button class="btile" type="button" data-id="${escapeHtml(m.id)}" style="--st:${st.color}">
-      <span class="edge"></span>
-      <span class="deco"></span>
+    <button class="btile" type="button" data-id="${escapeHtml(m.id)}"
+            data-s="${m.status}" style="--st:${st.color}">
       <span class="tt">
         <b>${escapeHtml(m.no)}</b><i>号機</i>
-        <span class="pips">${pips}</span>
-        <span class="tup num">${uptime}%</span>
-      </span>
-      <span class="ts">
-        ${st.label}${arrow ? `<em>${arrow}</em>` : ""}
-        ${m.group ? `<span class="gtag sm">${escapeHtml(m.group)}</span>` : ""}
+        <s title="${st.label}"></s>
       </span>
       <span class="tsku${m.sku ? "" : " none"}">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
       <span class="tfoot">
         <span class="tdue ${dueCls}">${dueTxt}</span>
         ${m.rolls > 0 ? `
-          <span class="tcnt num">
-            <em>反</em><b>${Math.round(c.producedRolls)}</b><small>/${m.rolls}</small>
-          </span>` : ""}
+          <span class="tcnt num"><b>${Math.round(c.producedRolls)}</b><small>/${m.rolls}</small></span>` : ""}
       </span>
       <span class="tbar"><i style="width:${Math.min(100, c.progress)}%"></i></span>
-      <span class="tid">
-        <s>${escapeHtml(m.no)}</s>
-        <span>${m.model ? escapeHtml(m.model) : "機種未設定"}</span>
-      </span>
     </button>`;
 }
 
@@ -2648,7 +2557,7 @@ function renderHome() {
         <span class="n${short.length ? " warn" : ""}">${short.length}</span></h2>
       ${homeRows(short.slice(0, 6), ({ e, y, lack }) => {
         const cnt = [...e.counts[y.key]].join("/");
-        return `<button class="hrow" type="button" data-sku="1" style="--hc:${y.color}">
+        return `<button class="hrow" type="button" data-sku="1">
           <span class="no" style="min-width:0;">${escapeHtml(e.name)}</span>
           <span class="txt">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span>
           <span class="val bad">−${fmt(lack)}kg</span>
@@ -3878,7 +3787,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-10";
+const APP_VERSION = "2026.08.31-11";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
