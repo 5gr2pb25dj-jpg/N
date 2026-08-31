@@ -686,6 +686,21 @@
   .btn-primary { background: var(--accent); color: #fff; }
   .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); box-shadow: none; }
 
+  /* データの保管 */
+  .bkbtns { display: grid; gap: 6px; }
+  .bkfile {
+    width: 100%; font-size: 11px; color: var(--ink-2);
+    background: var(--panel-in); border: 1px solid var(--line-2);
+    padding: 8px 9px;
+  }
+  .bkfile::-webkit-file-upload-button {
+    -webkit-appearance: none; appearance: none;
+    border: none; background: var(--ink); color: #fff;
+    font: inherit; font-weight: 700; font-size: 11px;
+    padding: 5px 10px; margin-right: 8px; cursor: pointer;
+  }
+  #bkOut { font-size: 10px; line-height: 1.4; }
+
   /* トースト */
   .toast {
     position: fixed; left: 12px; right: 12px;
@@ -1522,6 +1537,57 @@
     </div>
   </div>
 </form>
+
+<!-- データの保管 -->
+<div class="overlay" id="backupOverlay"></div>
+<div class="sheet" id="backupSheet">
+  <div class="sheet-head">
+    <span class="dot"></span>
+    <h2>データの保管</h2>
+    <span class="micro">backup</span>
+  </div>
+  <div class="sheet-body">
+    <div class="sec">
+      <div class="sec-l"><h3>書き出し</h3><span class="micro">export</span></div>
+      <div class="sec-r">
+        <p class="hint" id="bkStat"></p>
+        <div class="bkbtns">
+          <button class="btn btn-primary" type="button" id="bkShare">ファイルに保存・共有</button>
+          <button class="btn" type="button" id="bkCopy">テキストをコピー</button>
+        </div>
+        <div class="field" id="bkOutWrap" hidden style="margin-top:8px;">
+          <label for="bkOut">この内容を長押しでコピーしてください</label>
+          <textarea id="bkOut" rows="4" readonly></textarea>
+        </div>
+        <p class="hint" style="margin-top:8px;">
+          データはこの端末の中だけに保存されています。端末を替えたときやSafariの保存データを消したときに失われるので、ときどき書き出してファイルアプリやメモに残しておいてください。
+        </p>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-l"><h3>復元</h3><span class="micro">restore</span></div>
+      <div class="sec-r">
+        <div class="field">
+          <label for="bkFile">書き出したファイルから復元</label>
+          <input class="bkfile" type="file" id="bkFile" accept="application/json,.json,text/plain">
+        </div>
+        <div class="field" style="margin-top:10px;">
+          <label for="bkText">または、テキストを貼り付けて復元</label>
+          <textarea id="bkText" rows="3" placeholder="書き出したテキストを貼り付け"></textarea>
+        </div>
+        <button class="btn btn-danger" type="button" id="bkRestore" style="margin-top:8px;">読み込んで置き換える</button>
+        <p class="hint" style="margin-top:8px;">
+          読み込むと、いま登録されている内容はすべて置き換わります。実行前に確認が出ます。
+        </p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" type="button" id="btnBackupClose">閉じる</button>
+    </div>
+  </div>
+</div>
 
 <!-- 生産開始の演出 -->
 <div class="startfx" id="startFx" hidden aria-hidden="true">
@@ -2486,11 +2552,24 @@ function renderHome() {
           <span class="val bad">−${fmt(lack)}kg</span>
         </button>`;
       })}
+    </div>
+
+    <div class="hcard">
+      <span class="micro">backup</span>
+      <h2><span class="bar"></span>データの保管${backupIsStale() ? `<span class="n warn">!</span>` : ""}</h2>
+      <button class="hrow" type="button" data-backup="1"
+        style="--hc:${backupIsStale() ? "var(--danger)" : "var(--accent)"}">
+        <span class="no" style="min-width:0;">保管</span>
+        <span class="txt">${backupLabel()}</span>
+        <span class="val${backupIsStale() ? " bad" : ""}">書き出す</span>
+      </button>
     </div>`;
 
   box.querySelectorAll(".hrow").forEach(r =>
     r.addEventListener("click", () => {
-      if (r.dataset.group) {                // 案件はその号機だけの一覧へ
+      if (r.dataset.backup) {                // データの保管シートを開く
+        openBackupSheet();
+      } else if (r.dataset.group) {          // 案件はその号機だけの一覧へ
         groupFilter = r.dataset.group;
         setView("list");
       } else if (r.dataset.sku) {            // 糸の不足は品番ごとなので原糸へ
@@ -3272,6 +3351,204 @@ bulkSheet.addEventListener("submit", e => {
 $("btnBulkCancel").addEventListener("click", closeBulkSheet);
 bulkOverlay.addEventListener("click", closeBulkSheet);
 $("fabBulk").addEventListener("click", openBulkSheet);
+
+/* ============================================================
+   データの保管（書き出しと復元）
+   このアプリはこの端末のブラウザの中だけにデータを持っている。
+   端末の入れ替えや保存データの削除で消えてしまうため、
+   手元にファイルとして残せるようにしておく。
+   ============================================================ */
+const BACKUP_KEY = "factory-last-backup";
+const backupOverlay = document.getElementById("backupOverlay");
+const backupSheet = document.getElementById("backupSheet");
+
+function lastBackupAt() {
+  try {
+    const v = localStorage.getItem(BACKUP_KEY);
+    if (!v) return null;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? null : d;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 最後に書き出してから何日経ったか。一度も書き出していなければ null
+function backupAgeDays() {
+  const d = lastBackupAt();
+  if (!d) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+// 書き出しを促すかどうか（未実施、または2週間以上あいている）
+function backupIsStale() {
+  if (machines.length === 0) return false;
+  const age = backupAgeDays();
+  return age === null || age >= 14;
+}
+
+function backupLabel() {
+  const d = lastBackupAt();
+  if (!d) return "まだ書き出していません";
+  const age = backupAgeDays();
+  const p = n => String(n).padStart(2, "0");
+  const when = `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}`;
+  return age === 0 ? `本日書き出し済み（${when}）` : `最終 ${when}（${age}日前）`;
+}
+
+function markBackedUp() {
+  try { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); } catch (e) { /* 記録できなくても書き出しは済んでいる */ }
+  renderBackupStat();
+}
+
+function renderBackupStat() {
+  const el = $("bkStat");
+  if (el) el.textContent = `${machines.length}号機ぶんのデータ ／ ${backupLabel()}`;
+}
+
+function backupPayload() {
+  return JSON.stringify({
+    app: "factory-ops",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    machines,
+  }, null, 2);
+}
+
+function backupFileName() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return `factory-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`
+    + `-${p(d.getHours())}${p(d.getMinutes())}.json`;
+}
+
+// iPhone では共有シートから「ファイル」やメモに保存できる。
+// 使えない環境ではダウンロードで代替する。
+async function shareBackup() {
+  const text = backupPayload();
+  const name = backupFileName();
+
+  try {
+    const file = new File([text], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+      markBackedUp();
+      showToast("書き出しました");
+      renderAll();
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;   // 共有をやめただけ
+  }
+
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    markBackedUp();
+    showToast("書き出しました");
+    renderAll();
+  } catch (e) {
+    showToast("書き出せませんでした。テキストのコピーをお使いください", true);
+  }
+}
+
+async function copyBackup() {
+  const text = backupPayload();
+  try {
+    await navigator.clipboard.writeText(text);
+    markBackedUp();
+    showToast("コピーしました。メモなどに貼って保存してください");
+    renderAll();
+    return;
+  } catch (e) { /* クリップボードが使えないので手で選んでもらう */ }
+
+  const wrap = $("bkOutWrap");
+  const out = $("bkOut");
+  out.value = text;
+  wrap.hidden = false;
+  out.focus();
+  out.select();
+  showToast("下の欄に出しました。長押しでコピーしてください", true);
+}
+
+// 書き出したJSON、または機械の配列そのものを受け付ける
+function parseBackup(text) {
+  const data = JSON.parse(text);
+  const arr = Array.isArray(data) ? data
+    : (data && Array.isArray(data.machines)) ? data.machines
+    : null;
+  if (!arr) throw new Error("形式が違います");
+
+  const list = arr.map(normalize).filter(m => String(m.no).trim() !== "");
+  if (list.length === 0) throw new Error("号機が入っていません");
+  return list;
+}
+
+function applyRestore(text) {
+  let list;
+  try {
+    list = parseBackup(String(text || "").trim());
+  } catch (e) {
+    showToast("読み込めませんでした。バックアップの内容を確認してください", true);
+    return;
+  }
+
+  const msg = `${list.length}号機を読み込みます。\n`
+    + `いま登録されている${machines.length}号機はすべて置き換わります。よろしいですか？`;
+  if (!confirm(msg)) return;
+
+  const before = machines;
+  machines = list;
+  if (!saveMachines()) {
+    machines = before;   // 保存できなければ元に戻す
+    return;
+  }
+
+  closeBackupSheet();
+  $("bkText").value = "";
+  $("bkFile").value = "";
+  groupFilter = "";
+  renderAll();
+  showToast(`${list.length}号機を読み込みました`);
+}
+
+function openBackupSheet() {
+  renderBackupStat();
+  $("bkOutWrap").hidden = true;
+  backupOverlay.classList.add("open");
+  backupSheet.classList.add("open");
+}
+function closeBackupSheet() {
+  backupOverlay.classList.remove("open");
+  backupSheet.classList.remove("open");
+}
+
+$("bkShare").addEventListener("click", shareBackup);
+$("bkCopy").addEventListener("click", copyBackup);
+$("bkRestore").addEventListener("click", () => {
+  const text = $("bkText").value.trim();
+  if (!text) {
+    showToast("貼り付けるか、ファイルを選んでください", true);
+    return;
+  }
+  applyRestore(text);
+});
+$("bkFile").addEventListener("change", e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => applyRestore(r.result);
+  r.onerror = () => showToast("ファイルを読めませんでした", true);
+  r.readAsText(f);
+});
+$("btnBackupClose").addEventListener("click", closeBackupSheet);
+backupOverlay.addEventListener("click", closeBackupSheet);
 
 /* ============================================================
    検索 / トースト / 起動
