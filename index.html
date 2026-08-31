@@ -1058,8 +1058,11 @@
     text-indent: 0.34em; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
   }
   .boot-title {
-    display: block; font-size: 30px; font-weight: 700;
-    letter-spacing: 0.09em; text-indent: 0.09em; margin-top: 5px;
+    display: block; font-weight: 700;
+    /* 英字は和文より字数が伸びるので、狭い端末でも収まるよう幅に追従させる */
+    font-size: clamp(15px, 4.9vw, 23px);
+    letter-spacing: 0.07em; text-indent: 0.07em; margin-top: 6px;
+    text-transform: uppercase; white-space: nowrap;
     text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
   }
   .boot-sub {
@@ -1106,7 +1109,7 @@
   <div class="boot-center">
     <span class="boot-emblem"></span>
     <span class="boot-op">OPERATION</span>
-    <span class="boot-title">稼働管理</span>
+    <span class="boot-title">Production Control</span>
     <span class="boot-sub">サーバー N</span>
     <span class="boot-desc" id="bootDesc"></span>
   </div>
@@ -3875,7 +3878,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-9";
+const APP_VERSION = "2026.08.31-10";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {

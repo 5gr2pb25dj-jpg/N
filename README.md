@@ -144,7 +144,7 @@ https://5gr2pb25dj-jpg.github.io/N/
 ```
             ◆
        O P E R A T I O N
-          稼働管理
+     PRODUCTION CONTROL
          サーバー N
 
   全50号機のうち32号機が稼働中。
