@@ -953,6 +953,11 @@
     flex: none; font-size: 9px; font-weight: 700; color: #fff;
     background: var(--st-changeover); padding: 1px 5px;
   }
+  .badge-done {
+    flex: none; font-size: 9px; font-weight: 700; color: #fff;
+    background: var(--accent); padding: 1px 5px;
+  }
+  .btn:disabled { opacity: 0.4; cursor: default; }
 
   /* ---------------- 起動画面 ---------------- */
   .boot {
@@ -1296,8 +1301,34 @@
 
     <!-- 糸量 -->
     <div class="sec">
-      <div class="sec-l"><h3>糸量</h3><span class="micro">on hand</span></div>
+      <div class="sec-l"><h3>糸量</h3><span class="micro">yarn</span></div>
       <div class="sec-r">
+        <p class="micro" style="margin:0 0 6px;">purchased ／ 最初に買った量(kg)</p>
+        <div class="grid3">
+          <div class="field">
+            <label for="fBuyF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
+            <input id="fBuyF" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="fBuyM" class="yarn-label" style="--yc:var(--yarn-m)">中 kg</label>
+            <input id="fBuyM" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="fBuyB" class="yarn-label" style="--yc:var(--yarn-b)">裏 kg</label>
+            <input id="fBuyB" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+        </div>
+        <div class="quick" style="margin-top:9px;">
+          <p class="hint" style="flex:1;">
+            この品番のために手配した量。あとから追加で買った分も足してください。
+            実際にどれだけ使ったかの計算に使います。
+          </p>
+          <button type="button" id="btnBuyToHand" class="btn" style="flex:none; padding:8px 12px; font-size:11px;">
+            現在の量にも入れる
+          </button>
+        </div>
+
+        <p class="micro" style="margin:14px 0 6px;">on hand ／ 現在の糸量(kg)</p>
         <div class="grid3">
           <div class="field">
             <label for="fHandF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
@@ -1357,6 +1388,19 @@
             <tbody id="cKnitBody"></tbody>
           </table>
         </div>
+        <div id="usedWrap" hidden>
+          <p class="micro" style="margin:14px 0 4px;">used ／ 買った量からみた実際の消費</p>
+          <div class="calc-table">
+            <table>
+              <thead>
+                <tr><th>糸</th><th>買った量</th><th>使った量</th><th>実ロス率</th></tr>
+              </thead>
+              <tbody id="cUsedBody"></tbody>
+            </table>
+          </div>
+          <p class="hint" id="usedHint"></p>
+        </div>
+
         <p class="hint">
           この号機ぶんの数量です。同じ品番を複数の号機で流している場合の合計は、
           下のタブの「原糸」で確認できます。
@@ -1453,6 +1497,22 @@
           </div>
         </div>
 
+        <p class="micro" style="margin:12px 0 6px;">purchased ／ 最初に買った量(kg)</p>
+        <div class="grid3">
+          <div class="field">
+            <label for="nBuyF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
+            <input id="nBuyF" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="nBuyM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
+            <input id="nBuyM" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+          <div class="field">
+            <label for="nBuyB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
+            <input id="nBuyB" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
+          </div>
+        </div>
+
         <p class="micro" style="margin:12px 0 6px;">on hand ／ 現在の糸量(kg)</p>
         <div class="grid3">
           <div class="field">
@@ -1485,6 +1545,17 @@
           この品番を開始する
         </button>
         <p class="hint" id="promoteHint" style="margin-top:6px;"></p>
+      </div>
+    </div>
+
+    <!-- 完了 -->
+    <div class="sec">
+      <div class="sec-l"><h3>完了</h3><span class="micro">finish</span></div>
+      <div class="sec-r">
+        <button class="btn btn-primary" type="button" id="btnComplete" style="width:100%;">
+          この品番を完了する
+        </button>
+        <p class="hint" id="completeHint" style="margin-top:7px;"></p>
       </div>
     </div>
 
@@ -1731,6 +1802,7 @@ function normalizeOrder(o) {
   const r = o.ratio || {};
   const c = o.counts || {};
   const oh = o.onHand || {};
+  const pu = o.purchased || {};
   const rolls = Math.max(0, Math.round(num(o.rolls)));
   const weightPerRoll = Math.max(0, num(o.weightPerRoll));
   return {
@@ -1744,6 +1816,7 @@ function normalizeOrder(o) {
     ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
     counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
     onHand: { f: Math.max(0, num(oh.f)), m: Math.max(0, num(oh.m)), b: Math.max(0, num(oh.b)) },
+    purchased: { f: Math.max(0, num(pu.f)), m: Math.max(0, num(pu.m)), b: Math.max(0, num(pu.b)) },
   };
 }
 
@@ -1770,6 +1843,7 @@ function normalize(m) {
   const r = m.ratio || {};
   const c = m.counts || {};
   const h = m.onHand || {};
+  const pc = m.purchased || {};
 
   // 合計生産量は「1反あたりの重量 × 反数」で決まる。
   // 重量を持たない旧データは、合計生産量から重量を逆算して移行する。
@@ -1823,6 +1897,7 @@ function normalize(m) {
     lossPct: m.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(m.lossPct)),
     ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
     onHand: { f: Math.max(0, num(h.f)), m: Math.max(0, num(h.m)), b: Math.max(0, num(h.b)) },
+    purchased: { f: Math.max(0, num(pc.f)), m: Math.max(0, num(pc.m)), b: Math.max(0, num(pc.b)) },
     counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
     next: normalizeOrder(m.next),
     history: Array.isArray(m.history) ? m.history : [],
@@ -2803,11 +2878,13 @@ function formToMachine() {
       ratio: { f: $("nRatioF").value, m: $("nRatioM").value, b: $("nRatioB").value },
       counts: { f: $("nCountF").value.trim(), m: $("nCountM").value.trim(), b: $("nCountB").value.trim() },
       onHand: { f: $("nHandF").value, m: $("nHandM").value, b: $("nHandB").value },
+      purchased: { f: $("nBuyF").value, m: $("nBuyM").value, b: $("nBuyB").value },
     },
     history: existing ? existing.history : [],
     lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
     ratio: { f: $("fRatioF").value, m: $("fRatioM").value, b: $("fRatioB").value },
     onHand: { f: $("fHandF").value, m: $("fHandM").value, b: $("fHandB").value },
+    purchased: { f: $("fBuyF").value, m: $("fBuyM").value, b: $("fBuyB").value },
     log: editingId ? (machines.find(x => x.id === editingId)?.log || []) : [],
   });
 }
@@ -2831,6 +2908,9 @@ function fillForm(m) {
   $("fHandF").value = m.onHand.f || "";
   $("fHandM").value = m.onHand.m || "";
   $("fHandB").value = m.onHand.b || "";
+  $("fBuyF").value = m.purchased.f || "";
+  $("fBuyM").value = m.purchased.m || "";
+  $("fBuyB").value = m.purchased.b || "";
   $("fCountF").value = m.counts.f;
   $("fCountM").value = m.counts.m;
   $("fCountB").value = m.counts.b;
@@ -2850,6 +2930,9 @@ function fillForm(m) {
   $("nHandF").value = n.onHand.f || "";
   $("nHandM").value = n.onHand.m || "";
   $("nHandB").value = n.onHand.b || "";
+  $("nBuyF").value = n.purchased.f || "";
+  $("nBuyM").value = n.purchased.m || "";
+  $("nBuyB").value = n.purchased.b || "";
 
   syncSlider(m.rolls, m.producedRolls);
 }
@@ -3000,6 +3083,57 @@ function renderCalcPanel() {
     kEl.className = "v num" + (short ? " short" : " over");
   }
 
+  // 買った量からみた実際の消費。計算上の消費量と比べて実ロス率を出す
+  const anyBuy = YARNS.some(y => num(m.purchased[y.key]) > 0);
+  $("usedWrap").hidden = !anyBuy;
+  if (anyBuy) {
+    const lossF = 1 + num(m.lossPct) / 100;
+    const notes = [];
+    $("cUsedBody").innerHTML = YARNS.map(y => {
+      const cnt = (m.counts[y.key] || "").trim();
+      const buy = num(m.purchased[y.key]);
+      const now = num(m.onHand[y.key]);
+      const used = buy - now;                        // 手元から減った分＝使った分
+      // 計算どおりに編めていた場合の消費量（ロス率を含まない正味）
+      const plain = c.produced * (num(m.ratio[y.key]) / 100);
+      const real = plain > 0 && used > 0 ? (used / plain - 1) * 100 : null;
+      const cls = real === null ? "" : real > num(m.lossPct) + 0.05 ? "short" : "over";
+      if (real !== null && real > num(m.lossPct) + 0.05) {
+        notes.push(`${y.label}${cnt ? " " + cnt : ""} ${fmt(real)}%`);
+      }
+      return `
+      <tr>
+        <td><span class="yname" style="--yc:${y.color}">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span></td>
+        <td class="num">${buy > 0 ? fmt(buy) : "–"}</td>
+        <td class="num">${buy > 0 ? fmt(used) : "–"}</td>
+        <td class="num">${real === null ? "–" : `<span class="${cls}">${real >= 0 ? "+" : ""}${fmt(real)}%</span>`}</td>
+      </tr>`;
+    }).join("");
+
+    $("usedHint").innerHTML = c.produced <= 0
+      ? "水揚げを記録すると、買った量と実際の消費から本当のロス率を計算します。"
+      : notes.length
+        ? `<span class="short">設定のロス率 ${fmt(num(m.lossPct))}% を超えています：${escapeHtml(notes.join("／"))}</span>`
+          + `　使った量 = 買った量 − 現在の量`
+        : `<span class="over">設定のロス率 ${fmt(num(m.lossPct))}% の範囲に収まっています。</span>`
+          + `　使った量 = 買った量 − 現在の量`;
+  }
+
+  // 完了ボタンの案内
+  const cHint = $("completeHint");
+  const cBtn = $("btnComplete");
+  const hasOrder = !!m.sku || m.rolls > 0;
+  cBtn.disabled = !hasOrder;
+  if (!hasOrder) {
+    cHint.textContent = "品番を入れると、ここから完了にできます。";
+  } else if (m.rolls > 0 && c.remainRolls > 0.5) {
+    cHint.textContent = `残り${Math.round(c.remainRolls)}反あります。`
+      + `いま完了すると ${Math.round(c.producedRolls)}/${m.rolls}反 の未達として履歴に残ります。`;
+  } else {
+    cHint.textContent = "実績を履歴に移し、この号機のオーダーを空にします。"
+      + "現在の糸量は残った糸としてそのまま引き継ぎます。";
+  }
+
   const sum = c.ratioSum;
   const sumNote = sum > 0 && Math.abs(sum - 100) > 0.05
     ? `　⚠ 交編率の合計が ${fmt(sum)}% です（通常は100%）`
@@ -3040,6 +3174,14 @@ function renderLog() {
   });
 }
 
+// 履歴のバッジ。途中切り替え＝中断、反数に届かず完了＝未達
+function histBadge(h) {
+  if (h.partial) return `<span class="badge-part">中断</span>`;
+  if (h.short) return `<span class="badge-part">未達</span>`;
+  if (h.completed) return `<span class="badge-done">完了</span>`;
+  return "";
+}
+
 // 過去のオーダー（途中で切り替えたものは「中断」として残る）
 function renderHistory() {
   const box = $("histBody");
@@ -3057,7 +3199,7 @@ function renderHistory() {
     return `
       <div class="hist-item">
         <span class="sku">${h.sku ? escapeHtml(h.sku) : "品番未設定"}</span>
-        ${h.partial ? `<span class="badge-part">中断</span>` : ""}
+        ${histBadge(h)}
         <span class="pd">${escapeHtml(period)}</span>
         <span class="res num">${Math.round(num(h.producedRolls))}/${Math.round(num(h.rolls))}反</span>
       </div>`;
@@ -3108,9 +3250,11 @@ function closeEditSheet() {
   "fRatioF", "fRatioM", "fRatioB",
   "fCountF", "fCountM", "fCountB", "fStart", "fNext", "fGroup",
   "fHandF", "fHandM", "fHandB",
+  "fBuyF", "fBuyM", "fBuyB",
   "nSku", "nRolls", "nWeight", "nStart", "nEnd",
   "nRatioF", "nRatioM", "nRatioB", "nCountF", "nCountM", "nCountB",
   "nHandF", "nHandM", "nHandB",
+  "nBuyF", "nBuyM", "nBuyB",
 ].forEach(id => $(id).addEventListener("input", () => {
   // 反数か重量が変われば合計生産量が変わるので、スライダーの上限も合わせる
   if (id === "fRolls" || id === "fWeight") {
@@ -3259,6 +3403,9 @@ $("btnPromote").addEventListener("click", () => {
       remainRolls: cur.remainRolls,
       partial,
       closedAt: todayStr(),
+      counts: { ...m.counts },
+      purchased: { ...m.purchased },
+      leftover: { ...m.onHand },
       log: m.log,
     });
   }
@@ -3274,6 +3421,7 @@ $("btnPromote").addEventListener("click", () => {
   m.ratio = { ...n.ratio };
   m.counts = { ...n.counts };
   m.onHand = { ...n.onHand };
+  m.purchased = { ...n.purchased };
   m.producedRolls = 0;
   m.producedKg = 0;
   m.log = [];
@@ -3292,7 +3440,86 @@ $("btnPromote").addEventListener("click", () => {
   }
 });
 
+/* ---- この品番を完了する ----
+   オーダーを履歴に移し、号機を空にする。
+   残った糸は次でも使うので、現在の糸量はそのまま引き継ぐ。 */
+$("btnComplete").addEventListener("click", () => {
+  if (!editingId) { showToast("先に保存してください", true); return; }
+  const i = machines.findIndex(x => x.id === editingId);
+  if (i < 0) return;
+  const m = machines[i];
+
+  if (!m.sku && m.rolls === 0) {
+    showToast("完了にする品番がありません", true);
+    return;
+  }
+
+  const cur = calc(m);
+  const short = m.rolls > 0 && cur.remainRolls > 0.5;   // 反数に届いていない
+
+  let msg = `「${m.sku || "品番未設定"}」を完了にします。\n`;
+  msg += m.rolls > 0
+    ? `実績 ${Math.round(cur.producedRolls)}/${m.rolls}反`
+    : `実績 ${Math.round(cur.producedRolls)}反`;
+  if (short) msg += `（残り${Math.round(cur.remainRolls)}反の未達）`;
+  msg += `\n履歴に残し、この号機のオーダーを空にします。よろしいですか？`;
+  if (!confirm(msg)) return;
+
+  m.history.unshift({
+    sku: m.sku,
+    rolls: m.rolls,
+    weightPerRoll: m.weightPerRoll,
+    startDate: m.startDate,
+    endDate: m.nextChange,
+    producedRolls: m.producedRolls,
+    remainRolls: cur.remainRolls,
+    partial: false,        // 途中切り替えではない
+    completed: true,
+    short,                 // 反数に届かずに終えたか
+    closedAt: todayStr(),
+    counts: { ...m.counts },
+    purchased: { ...m.purchased },
+    leftover: { ...m.onHand },
+    log: m.log,
+  });
+
+  // オーダーを空にする。糸の設定と残った糸は次の判断に使うので残す
+  m.sku = "";
+  m.rolls = 0;
+  m.weightPerRoll = 0;
+  m.totalKg = 0;
+  m.producedRolls = 0;
+  m.producedKg = 0;
+  m.startDate = "";
+  m.nextChange = "";
+  m.purchased = { f: 0, m: 0, b: 0 };   // 買った量は品番ごとの記録なので持ち越さない
+  m.log = [];
+  m.status = "idle";
+
+  if (saveMachines()) {
+    fillForm(m);
+    renderCountOptions();
+    renderCalcPanel();
+    renderLog();
+    renderHistory();
+    renderAll();
+    const nx = m.next.sku || (m.next.rolls > 0 ? "次の品番" : "");
+    showToast(nx
+      ? `完了しました。「${nx}」は下の「この品番を開始する」から始められます`
+      : "完了しました");
+  }
+});
+
 // 在庫欄を「残り必要量」で埋める補助（手配直後の目安として使う）
+// 手配した直後は「買った量＝手元にある量」なので、まとめて入れられるようにする
+$("btnBuyToHand").addEventListener("click", () => {
+  $("fHandF").value = $("fBuyF").value;
+  $("fHandM").value = $("fBuyM").value;
+  $("fHandB").value = $("fBuyB").value;
+  renderCalcPanel();
+  showToast("現在の量に反映しました");
+});
+
 $("btnHandReset").addEventListener("click", () => {
   const c = calc(formToMachine());
   // 小数第2位に切り上げる。切り捨てると1反ぶん足りなくなることがある
@@ -3556,7 +3783,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-2";
+const APP_VERSION = "2026.08.31-3";
 
 (function showVersion() {
   const el = $("bootVer");
