@@ -223,41 +223,125 @@
   }
   .viewtoggle .vi { width: 15px; height: 11px; background: currentColor; }
   .viewtoggle .vl { font-size: 8px; font-weight: 700; letter-spacing: 0.04em; }
-  /* カード表示のときは一覧アイコン、一覧表示のときはカードアイコンを出す */
-  .vi-list { clip-path: polygon(0 0,100% 0,100% 18%,0 18%,0 41%,100% 41%,100% 59%,0 59%,0 82%,100% 82%,100% 100%,0 100%); }
+  /* カード表示のときはタイルのアイコン、タイル表示のときはカードのアイコンを出す */
   .vi-card { clip-path: polygon(0 0,100% 0,100% 42%,0 42%,0 58%,100% 58%,100% 100%,0 100%); }
+  .vi-tile {
+    background: none;
+    background-image:
+      linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor),
+      linear-gradient(currentColor, currentColor), linear-gradient(currentColor, currentColor);
+    background-size: 45% 45%;
+    background-repeat: no-repeat;
+    background-position: 0 0, 100% 0, 0 100%, 100% 100%;
+  }
 
   main { padding: 4px 12px 12px; display: grid; gap: 8px; }
-  main.compact { gap: 3px; }
 
-  /* コンパクトな一覧行 */
-  .lrow {
-    display: flex; align-items: center; gap: 8px;
-    width: 100%; text-align: left; cursor: pointer;
-    background: var(--panel);
-    border: none; border-left: 3px solid var(--st, var(--st-idle));
-    box-shadow: var(--lift);
-    padding: 8px 10px;
+  /* ---- 基地画面ふうのタイル一覧 ---- */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+    gap: 6px;
   }
-  .lrow:active { background: rgba(228, 228, 226, 0.95); }
-  .lrow .no { font-size: 14px; font-weight: 800; flex: none; min-width: 2.4em; }
-  .lrow .tg {
-    flex: none; font-size: 9px; font-weight: 700; color: #fff;
-    background: var(--st); padding: 2px 5px; line-height: 1.3;
+  .btile {
+    position: relative;
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    min-height: 96px;
+    padding: 8px 9px 15px 15px;
+    border: none;
+    color: #fff;
+    overflow: hidden;
+    background: linear-gradient(158deg,
+      rgba(62, 68, 77, 0.96) 0%,
+      rgba(38, 42, 48, 0.96) 44%,
+      rgba(24, 27, 31, 0.96) 100%);
+    box-shadow: var(--lift), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   }
-  .lrow .sku {
-    font-size: 12px; font-weight: 700; min-width: 0;
+  .btile:active { filter: brightness(1.3); }
+  /* 左端の状態バー */
+  .btile .edge {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 7px;
+    background: var(--st);
+  }
+  /* 奥に薄く敷く設備ふうの模様 */
+  .btile .deco {
+    position: absolute; right: -10px; bottom: 6px;
+    width: 74px; height: 58px; opacity: 0.16; pointer-events: none;
+    background: repeating-linear-gradient(-52deg,
+      rgba(255, 255, 255, 0.9) 0 1px, transparent 1px 8px);
+    clip-path: polygon(18% 0, 100% 0, 100% 100%, 0 100%, 0 26%);
+  }
+  .btile > * { position: relative; }
+
+  /* 号機番号とレベルピップ */
+  .btile .tt { display: flex; align-items: baseline; gap: 4px; }
+  .btile .tt b { font-size: 18px; font-weight: 800; letter-spacing: 0.02em; }
+  .btile .tt i {
+    font-style: normal; font-size: 9.5px; font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .btile .pips { display: flex; gap: 1.5px; align-self: center; margin-left: 2px; }
+  .btile .pips s {
+    width: 4px; height: 9px; background: rgba(255, 255, 255, 0.2);
+    text-decoration: none; display: block;
+  }
+  .btile .pips s.on { background: var(--st); }
+  .btile .tup {
+    margin-left: auto; font-size: 10px; font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  /* 状態の行 */
+  .btile .ts {
+    display: flex; align-items: center; gap: 5px;
+    margin-top: 2px; font-size: 11px; font-weight: 700; color: var(--st);
+  }
+  .btile .ts em { font-style: normal; letter-spacing: -0.08em; font-size: 10px; }
+  .btile .gtag.sm {
+    margin-left: auto;
+    max-width: 6.5em;
+    color: rgba(255, 255, 255, 0.6);
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 9.5px; font-weight: 700;
+  }
+  .btile .gtag.sm::before { content: "#"; opacity: 0.55; }
+
+  /* 品番 */
+  .btile .tsku {
+    display: block; margin-top: 7px;
+    font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, 0.92);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .lrow .pg {
-    margin-left: auto; flex: none; display: flex; align-items: center; gap: 6px;
+  .btile .tsku.none { color: rgba(255, 255, 255, 0.35); font-weight: 600; }
+
+  /* 下段（納期と反数） */
+  .btile .tfoot {
+    display: flex; align-items: flex-end; gap: 6px; margin-top: 5px;
   }
-  .lrow .pg .b { width: 42px; height: 4px; background: var(--panel-in-2); }
-  .lrow .pg .b i { display: block; height: 100%; background: var(--accent); }
-  .lrow .pg .t { font-size: 10px; font-weight: 700; color: var(--ink-2); min-width: 4.2em; text-align: right; }
-  .lrow .due { flex: none; font-size: 10px; font-weight: 700; color: var(--ink-2); min-width: 4.2em; text-align: right; }
-  .lrow .due.soon { color: #a86f0f; }
-  .lrow .due.overdue { color: var(--danger); }
+  .btile .tdue {
+    font-size: 10px; font-weight: 700; color: rgba(255, 255, 255, 0.5);
+  }
+  .btile .tdue.soon { color: #f0b93f; }
+  .btile .tdue.overdue { color: #ff8072; }
+  .btile .tcnt {
+    margin-left: auto; display: flex; align-items: baseline; gap: 2px;
+    color: #fff;
+  }
+  .btile .tcnt em {
+    font-style: normal; font-size: 9px; font-weight: 700;
+    color: rgba(255, 255, 255, 0.45);
+  }
+  .btile .tcnt b { font-size: 17px; font-weight: 800; line-height: 1; }
+  .btile .tcnt small { font-size: 10px; color: rgba(255, 255, 255, 0.5); font-weight: 700; }
+
+  /* 一番下の進捗バー */
+  .btile .tbar {
+    position: absolute; left: 7px; right: 0; bottom: 0; height: 3px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .btile .tbar i { display: block; height: 100%; background: var(--accent); }
 
   /* 案件のバッジ */
   .gtag {
@@ -1022,8 +1106,8 @@
   <div class="searchrow">
     <input class="search" id="search" type="search" placeholder="号機・品番・番手・機種で検索" autocomplete="off">
     <button class="viewtoggle" id="viewToggle" type="button" aria-label="表示を切り替える">
-      <span class="vi vi-list" id="viewIcon"></span>
-      <span class="vl" id="viewLabel">一覧</span>
+      <span class="vi vi-tile" id="viewIcon"></span>
+      <span class="vl" id="viewLabel">タイル</span>
     </button>
   </div>
   <div class="chips" id="chips"></div>
@@ -1482,7 +1566,7 @@ const VIEW_KEY = "factory-list-mode";
 
 let machines = [];
 let filterStatus = "all";
-let listMode = "card";   // "card" | "compact"
+let listMode = "card";   // "card" | "tile"
 let groupFilter = "";    // 案件で絞り込み中の名前
 let histAll = false;     // 履歴をすべて表示するか
 let query = "";
@@ -1878,33 +1962,52 @@ function cardHtml(m) {
     </button>`;
 }
 
-// コンパクトな1行表示
-function rowHtml(m) {
+/* 基地画面ふうのタイル1枚。
+   左の色帯＝状態、ピップ＝稼働率の目安、右下＝水揚げ反数／総反数。 */
+function tileHtml(m) {
   const st = STATUS[m.status] || STATUS.idle;
   const c = calc(m);
   const days = daysUntil(m.nextChange);
   const dueCls = days === null ? "" : days < 0 ? "overdue" : days <= 7 ? "soon" : "";
-  const dueTxt = days === null ? "—"
-    : days < 0 ? `${-days}日超過` : days === 0 ? "今日" : `あと${days}日`;
+  const dueTxt = days === null ? "予定なし"
+    : days < 0 ? `${-days}日超過` : days === 0 ? "本日交換" : `あと${days}日`;
+
+  const uptime = Math.max(0, Math.min(100, num(m.uptime)));
+  const lit = Math.round(uptime / 20);   // 0〜5個ぶんの点灯
+  const pips = Array.from({ length: 5 },
+    (_, k) => `<s class="${k < lit ? "on" : ""}"></s>`).join("");
+
+  // 状態に応じて矢印の本数を変える（稼働中がいちばん賑やか）
+  const arrow = m.status === "running" ? "▶▶" : m.status === "changeover" ? "▶" : "";
 
   return `
-    <button class="lrow" type="button" data-id="${escapeHtml(m.id)}" style="--st:${st.color}">
-      <span class="no">${escapeHtml(m.no)}</span>
-      <span class="tg">${st.label}</span>
-      <span class="sku">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
-      ${m.group ? `<span class="gtag sm">${escapeHtml(m.group)}</span>` : ""}
-      <span class="pg">
-        <span class="b"><i style="width:${Math.min(100, c.progress)}%"></i></span>
-        <span class="t num">${m.rolls > 0 ? `${Math.round(c.producedRolls)}/${m.rolls}反` : "—"}</span>
+    <button class="btile" type="button" data-id="${escapeHtml(m.id)}" style="--st:${st.color}">
+      <span class="edge"></span>
+      <span class="deco"></span>
+      <span class="tt">
+        <b>${escapeHtml(m.no)}</b><i>号機</i>
+        <span class="pips">${pips}</span>
+        <span class="tup num">${uptime}%</span>
       </span>
-      <span class="due ${dueCls}">${dueTxt}</span>
+      <span class="ts">
+        ${st.label}${arrow ? `<em>${arrow}</em>` : ""}
+        ${m.group ? `<span class="gtag sm">${escapeHtml(m.group)}</span>` : ""}
+      </span>
+      <span class="tsku${m.sku ? "" : " none"}">${m.sku ? escapeHtml(m.sku) : "品番未設定"}</span>
+      <span class="tfoot">
+        <span class="tdue ${dueCls}">${dueTxt}</span>
+        ${m.rolls > 0 ? `
+          <span class="tcnt num">
+            <em>反</em><b>${Math.round(c.producedRolls)}</b><small>/${m.rolls}</small>
+          </span>` : ""}
+      </span>
+      <span class="tbar"><i style="width:${Math.min(100, c.progress)}%"></i></span>
     </button>`;
 }
 
 function renderList() {
   const list = document.getElementById("list");
   const items = filteredMachines();
-  list.classList.toggle("compact", listMode === "compact");
 
   if (machines.length === 0) {
     list.innerHTML = `
@@ -1928,9 +2031,13 @@ function renderList() {
        </button>`
     : "";
 
+  const body = listMode === "tile"
+    ? `<div class="tiles">${items.map(tileHtml).join("")}</div>`
+    : items.map(cardHtml).join("");
+
   list.innerHTML = banner
     + `<div class="count-line">${items.length} / ${machines.length} units</div>`
-    + items.map(listMode === "compact" ? rowHtml : cardHtml).join("");
+    + body;
 
   if (groupFilter) {
     $("clearGroup").addEventListener("click", () => {
@@ -1939,20 +2046,20 @@ function renderList() {
     });
   }
 
-  list.querySelectorAll(".card, .lrow").forEach(el => {
+  list.querySelectorAll(".card, .btile").forEach(el => {
     el.addEventListener("click", () => openEditSheet(el.dataset.id));
   });
 }
 
-/* ---- カード表示とコンパクト表示の切り替え ---- */
+/* ---- カード表示とタイル表示の切り替え ---- */
 function applyViewToggle() {
-  const toCompact = listMode !== "compact"; // 押したときに切り替わる先
-  document.getElementById("viewIcon").className = "vi " + (toCompact ? "vi-list" : "vi-card");
-  document.getElementById("viewLabel").textContent = toCompact ? "一覧" : "カード";
+  const toTile = listMode !== "tile"; // 押したときに切り替わる先
+  document.getElementById("viewIcon").className = "vi " + (toTile ? "vi-tile" : "vi-card");
+  document.getElementById("viewLabel").textContent = toTile ? "タイル" : "カード";
 }
 
 document.getElementById("viewToggle").addEventListener("click", () => {
-  listMode = listMode === "compact" ? "card" : "compact";
+  listMode = listMode === "tile" ? "card" : "tile";
   try { localStorage.setItem(VIEW_KEY, listMode); } catch (e) { /* 保存できなくても表示は切り替える */ }
   applyViewToggle();
   renderList();
@@ -3186,7 +3293,9 @@ function showToast(msg, isError) {
 
 try {
   const saved = localStorage.getItem(VIEW_KEY);
-  if (saved === "compact" || saved === "card") listMode = saved;
+  // "compact" は以前の一覧表示。いまはタイル表示に読み替える
+  if (saved === "compact" || saved === "tile") listMode = "tile";
+  else if (saved === "card") listMode = "card";
 } catch (e) { /* 読めなければ既定のカード表示 */ }
 
 machines = loadMachines();
