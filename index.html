@@ -1644,7 +1644,10 @@
           <textarea id="bkOut" rows="4" readonly></textarea>
         </div>
         <p class="hint" style="margin-top:8px;">
-          データはこの端末の中だけに保存されています。端末を替えたときやSafariの保存データを消したときに失われるので、ときどき書き出してファイルアプリやメモに残しておいてください。
+          データはこの端末の中だけに保存されています。ときどき書き出して、ファイルアプリやメモに残しておいてください。<br><br>
+          <b>次の操作をすると消えます。</b>ホーム画面のアイコンを削除する（アイコンを替えるために入れ直す場合も含みます）、
+          Safariの保存データを消す、端末を替える。<b>いずれも先に書き出してください。</b><br><br>
+          ホーム画面のアプリとSafariでは保存が分かれています。片方に入れたデータはもう片方には出てきません。
         </p>
       </div>
     </div>
@@ -3869,7 +3872,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.09.02-21";
+const APP_VERSION = "2026.09.02-22";
 
 // バージョンは「データの保管」の中に出る（renderBackupStat）
 
@@ -3906,6 +3909,78 @@ try {
   if (saved === "compact" || saved === "tile") listMode = "tile";
   else if (saved === "card") listMode = "card";
 } catch (e) { /* 読めなければ既定のカード表示 */ }
+
+/* ------------------------------------------------------------
+   保存の中身を見る
+
+   端末には開発者ツールが無いので、消えたのか読めないだけなのかを
+   その場で確かめられるようにする。何も書き換えない。
+   ------------------------------------------------------------ */
+function showDiag() {
+  const esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
+  const rows = [];
+  let raw = "", found = false;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const v = localStorage.getItem(k) || "";
+      let note = `${v.length.toLocaleString()} 文字`;
+      if (k === STORAGE_KEY) {
+        found = true;
+        raw = v;
+        try {
+          const a = JSON.parse(v);
+          note += Array.isArray(a) ? ` ／ 号機 ${a.length}台` : " ／ 配列ではありません";
+        } catch (e) {
+          note += " ／ 壊れていて読めません";
+        }
+      }
+      rows.push(`<tr><td>${esc(k)}</td><td>${note}</td></tr>`);
+    }
+  } catch (e) {
+    rows.push(`<tr><td colspan="2">保存領域を読めません（${esc(e.message)}）</td></tr>`);
+  }
+
+  document.body.innerHTML = `
+    <div style="padding:18px 16px 40px; color:#ececec; background:#1a1d20;
+                font:13px/1.75 -apple-system,BlinkMacSystemFont,system-ui,'Hiragino Sans',sans-serif;
+                min-height:100vh; box-sizing:border-box;">
+      <h1 style="font-size:15px; letter-spacing:.12em; margin:0 0 4px;">保存の中身</h1>
+      <p style="color:#9aa0a6; font-size:11.5px; margin:0 0 14px;">
+        この画面は何も書き換えません。閉じるだけなら戻ってください。
+      </p>
+      <div style="padding:12px; margin-bottom:12px; font-weight:700;
+                  background:${found ? "#1f6b3a" : "#8f2f27"};">
+        ${found ? "号機のデータは残っています" : "この保存領域に号機のデータはありません"}
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+        <thead><tr style="text-align:left; color:#9aa0a6; font-size:10.5px; letter-spacing:.1em;">
+          <th style="padding:4px 0;">キー</th><th>中身</th></tr></thead>
+        <tbody>${rows.length ? rows.join("") : '<tr><td colspan="2">空です</td></tr>'}</tbody>
+      </table>
+      ${found ? `
+      <p style="margin:16px 0 6px; font-size:11.5px; color:#9aa0a6;">
+        下の文字をすべて選んでコピーし、メモなどに貼って控えてください。
+        「データの保管」の復元欄に貼れば元に戻せます。
+      </p>
+      <textarea readonly style="width:100%; height:34vh; box-sizing:border-box; padding:8px;
+        background:#0f1113; color:#c9ccd0; border:1px solid #3a3f44; font-size:10px;
+        font-family:ui-monospace,Menlo,monospace;">${esc(raw)}</textarea>` : `
+      <p style="margin:16px 0; font-size:12px;">
+        書き出したファイルが残っていないか、ファイルアプリで
+        <b>factory-</b> を検索してみてください。<br>
+        Safari で開いた場合と、ホーム画面のアプリとでは保存が分かれています。
+        両方で確かめてください。
+      </p>`}
+    </div>`;
+  try { history.replaceState(null, "", location.pathname + location.hash); } catch (e) { /* 置き換えられなくても支障はない */ }
+}
+
+
+if (/[?&]diag=1(&|$)/.test(location.search)) {
+  // 保存の中身を見るだけ。読み込みも移行もしない。
+  showDiag();
+} else {
 
 machines = loadMachines();
 migrateStockIfNeeded();
@@ -3956,6 +4031,8 @@ migrateStockIfNeeded();
 
 applyViewToggle();
 renderAll();
+
+}
 </script>
 
 </body>
