@@ -1773,6 +1773,9 @@ function migrateStockIfNeeded() {
   const r = stockFromMachines(machines);
   stock = r.stock;
   stockConflicts = r.conflicts;
+  // 号機がまだ無いうちは台帳を作らない。空の台帳を書いてしまうと、
+  // あとから旧い形式のデータが入ったときに移行が走らなくなる。
+  if (machines.length === 0 && Object.keys(stock).length === 0) return false;
   try {
     localStorage.setItem(STOCK_KEY, JSON.stringify(stock));
     if (r.conflicts.length) localStorage.setItem(MIGRATE_KEY, JSON.stringify(r.conflicts));
@@ -3929,7 +3932,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.09.02-17";
+const APP_VERSION = "2026.09.02-18";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
@@ -3973,6 +3976,51 @@ try {
 
 machines = loadMachines();
 migrateStockIfNeeded();
+
+/* ------------------------------------------------------------
+   全消去
+
+   端末の中のデータは外からは触れないので、ここから消せるようにする。
+   画面にボタンは置かない。誤って押すと工場のデータが消えるため、
+   ?reset=1 を付けて開いたときだけ、確認を2回取って消す。
+   ------------------------------------------------------------ */
+(function resetIfAsked() {
+  if (!/[?&]reset=1(&|$)/.test(location.search)) return;
+
+  const counts = Object.keys(stock).length;
+  const logs = machines.reduce((t, m) => t + m.log.length, 0);
+  const hist = machines.reduce((t, m) => t + m.history.length, 0);
+
+  if (machines.length === 0 && counts === 0) {
+    alert("消すデータはありません。");
+  } else {
+    const ok1 = confirm(
+      "この端末に保存されている内容をすべて消します。\n\n"
+      + `・${machines.length}号機\n`
+      + `・水揚げの記録 ${logs}件\n`
+      + `・完了・中断した品番の履歴 ${hist}件\n`
+      + `・糸の在庫 ${counts}番手\n\n`
+      + `書き出し: ${backupLabel()}\n\n`
+      + "元には戻せません。続けますか？"
+    );
+    if (ok1 && confirm("本当に消します。よろしいですか？")) {
+      try {
+        // このアプリのキーだけを消す。他のサイトの保存には触れない。
+        for (const k of Object.keys(localStorage)) {
+          if (k.indexOf("factory-") === 0) localStorage.removeItem(k);
+        }
+      } catch (e) { /* 消せなければ下の再読み込みで元のまま出る */ }
+      machines = [];
+      stock = {};
+      stockConflicts = [];
+    }
+  }
+  // ?reset=1 を URL から外す。再読み込みで二度目が出ないようにする。
+  try {
+    history.replaceState(null, "", location.pathname + location.hash);
+  } catch (e) { /* 置き換えられなくても支障はない */ }
+})();
+
 applyViewToggle();
 renderAll();
 </script>
