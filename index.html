@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>工場稼働管理</title>
+<title>Laplace ／ 工場稼働管理</title>
 
 <!-- ホーム画面追加（PWA）用設定 -->
 <link rel="manifest" href="manifest.json">
@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="稼働管理">
+<meta name="apple-mobile-web-app-title" content="Laplace">
 
 <style>
   /* ============================================================
@@ -1013,83 +1013,67 @@
     opacity: 1; transition: opacity 0.5s ease; cursor: pointer; overflow: hidden;
   }
   .boot.done { opacity: 0; pointer-events: none; }
+
+  /* 写真の上に名前を置くので、真ん中を少し落として字を浮かせる */
   .boot::before {
     content: ""; position: absolute; inset: 0;
-    background: linear-gradient(180deg,
-      rgba(8, 11, 15, 0.34) 0%,
-      rgba(8, 11, 15, 0.10) 34%,
-      rgba(8, 11, 15, 0.06) 56%,
-      rgba(8, 11, 15, 0.40) 84%,
-      rgba(8, 11, 15, 0.72) 100%);
+    background:
+      radial-gradient(125% 85% at 50% 50%,
+        rgba(8, 11, 15, 0.10) 0%,
+        rgba(8, 11, 15, 0.42) 62%,
+        rgba(8, 11, 15, 0.66) 100%),
+      linear-gradient(180deg,
+        rgba(8, 11, 15, 0.34) 0%,
+        rgba(8, 11, 15, 0.06) 38%,
+        rgba(8, 11, 15, 0.30) 78%,
+        rgba(8, 11, 15, 0.62) 100%);
   }
   .boot > * { position: relative; z-index: 1; }
 
-  .boot-center {
-    position: absolute; left: 8%; right: 8%; top: 34%;
+  /* ---------------- 起動画面の題字 ----------------
+     出すのは名前だけ。字間を広げた状態からぼかしごと絞り込み、
+     少し遅れて細い罫を中央から左右へ引く。動きはこの2つだけ。 */
+  .boot-name {
+    position: absolute; left: 6%; right: 6%; top: 47%;
+    transform: translateY(-50%);
     text-align: center; color: #fff;
-    opacity: 0; animation: bootIn 0.8s 0.1s ease forwards;
   }
-  @keyframes bootIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @keyframes bootFade { to { opacity: 1; } }
+  .bn-word {
+    display: block;
+    font-size: clamp(28px, 11vw, 56px);
+    font-weight: 200;
+    text-transform: uppercase;
+    white-space: nowrap;
+    letter-spacing: 0.30em;
+    /* 字間は最後の1文字の後ろにも入る。中央に置くと、その半分だけ
+       左へ寄って見えるので、同じ量を右へ戻す。全量を戻すと行き過ぎる。 */
+    text-indent: 0.15em;
+    text-shadow: 0 2px 26px rgba(0, 0, 0, 0.72), 0 0 80px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    animation: bnWord 1.15s 0.12s cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
+  }
+  /* 開き始めの字間は、いちばん狭い端末でも画面からはみ出さない幅にしてある。
+     広げすぎると nowrap のまま端が切れる。 */
+  @keyframes bnWord {
+    from { opacity: 0; letter-spacing: 0.46em; text-indent: 0.23em; filter: blur(7px); }
+    to   { opacity: 1; letter-spacing: 0.30em; text-indent: 0.15em; filter: blur(0); }
+  }
+  .bn-rule {
+    display: block; height: 1px; width: 0; margin: 18px auto 0;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
+    opacity: 0;
+    animation: bnRule 0.74s 0.46s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+  }
+  @keyframes bnRule { to { width: 58%; opacity: 1; } }
 
-  /* 中央の紋章。アプリのアイコンと同じ菱形 */
-  .boot-emblem {
-    display: block;            /* span なので指定しないと寸法が効かない */
-    width: 46px; height: 46px; margin: 0 auto 12px;
-    background: #0b0e11;
-    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  /* その日の2回目以降と、動きを減らす設定のとき。
+     途中で切ると崩れて見えるので、animation は使わず最終形で出す。 */
+  .boot.quick .bn-word {
+    animation: none; opacity: 1;
+    letter-spacing: 0.30em; text-indent: 0.15em; filter: none;
   }
-  .boot-emblem::after {
-    content: ""; display: block; width: 46%; height: 46%;
-    margin: 27% auto 0; background: #f2ece1;
-    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  }
-
-  .boot-op {
-    display: block; font-size: 9.5px; letter-spacing: 0.34em;
-    color: rgba(255, 255, 255, 0.85); font-weight: 600;
-    text-indent: 0.34em; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
-  }
-  .boot-title {
-    display: block; font-weight: 700;
-    /* 英字は和文より字数が伸びるので、狭い端末でも収まるよう幅に追従させる */
-    font-size: clamp(15px, 4.9vw, 23px);
-    letter-spacing: 0.07em; text-indent: 0.07em; margin-top: 6px;
-    text-transform: uppercase; white-space: nowrap;
-    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
-  }
-  .boot-sub {
-    display: block; font-size: 15px; font-weight: 500;
-    letter-spacing: 0.13em; text-indent: 0.13em; margin-top: 2px;
-    color: rgba(255, 255, 255, 0.92);
-    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
-  }
-  /* 世界観ではなく、その日の稼働状況を語らせる */
-  .boot-desc {
-    display: block; margin: 26px auto 0; max-width: 24em;
-    font-size: 11px; line-height: 1.95;
-    color: rgba(255, 255, 255, 0.82);
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
-    opacity: 0; animation: bootFade 0.7s 0.6s ease forwards;
-  }
-
-  .boot-load {
-    position: absolute; right: 16px;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    font-size: 12.5px; letter-spacing: 0.02em;
-    color: rgba(255, 255, 255, 0.95);
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
-    opacity: 0; animation: bootFade 0.5s 0.35s ease forwards;
-  }
-  .boot-ver {
-    position: absolute; left: 16px;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    font-size: 9px; letter-spacing: 0.06em;
-    color: rgba(255, 255, 255, 0.42);
-    font-variant-numeric: tabular-nums;
-    opacity: 0; animation: bootFade 0.5s 0.9s ease forwards;
-  }
+  .boot.quick .bn-rule { animation: none; opacity: 1; width: 58%; }
 
   @media (prefers-reduced-motion: reduce) {
     .boot-center, .boot-desc, .boot-load, .boot-ver { animation-duration: 0.01s; }
@@ -1100,15 +1084,10 @@
 
 <!-- ============ 起動画面 ============ -->
 <div class="boot" id="boot" role="status" aria-label="起動中">
-  <div class="boot-center">
-    <span class="boot-emblem"></span>
-    <span class="boot-op">OPERATION</span>
-    <span class="boot-title">Production Control</span>
-    <span class="boot-sub">サーバー N</span>
-    <span class="boot-desc" id="bootDesc"></span>
+  <div class="boot-name">
+    <span class="bn-word">Laplace</span>
+    <span class="bn-rule"></span>
   </div>
-  <div class="boot-load" id="bootLoad">Loading.</div>
-  <div class="boot-ver" id="bootVer">Ver 1.0</div>
 </div>
 
 <header>
@@ -3862,44 +3841,21 @@ backupOverlay.addEventListener("click", closeBackupSheet);
   const boot = document.getElementById("boot");
   if (!boot) return;
 
-  const descEl = document.getElementById("bootDesc");
-  const loadEl = document.getElementById("bootLoad");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   // 1日に何度も開く道具なので、通しで見せるのはその日の初回だけにする。
-  // 2回目以降は情報だけ一瞬出して本編へ入る。見た目は変えない。
+  // 2回目以降は題字を最終形のまま一瞬出して本編へ入る。
   const BOOT_KEY = "factory-boot-seen";
   let seenToday = false;
   try { seenToday = localStorage.getItem(BOOT_KEY) === todayStr(); } catch (e) { /* 読めなければ通しで見せる */ }
   try { localStorage.setItem(BOOT_KEY, todayStr()); } catch (e) { /* 記録できなくても支障はない */ }
 
-  const DURATION = reduce ? 500 : seenToday ? 260 : 1600;
+  // 動きの途中で切ると崩れて見えるので、短い側は動かさずに出す
+  const quick = reduce || seenToday;
+  if (quick) boot.classList.add("quick");
 
-  // その日の状況を1〜2文で。登録が無ければ案内文にする
-  function describe() {
-    const n = machines.length;
-    if (n === 0) return "号機がまだ登録されていません。「号機一覧」から一括登録できます。";
-
-    const running = machines.filter(m => m.status === "running").length;
-    const parts = ["全" + n + "号機のうち" + running + "号機が稼働中。"];
-
-    // 原糸が残り必要量に届いていない番手
-    let low = 0;
-    try {
-      for (const e of aggregateByCount(machines, stock)) if (e.rest > 0.05 && e.gap < -0.05) low++;
-    } catch (err) { /* 集計できなくても起動は進める */ }
-
-    // 予定日を過ぎている号機
-    let over = 0;
-    for (const m of machines) {
-      const d = daysUntil(m.nextChange);
-      if (d !== null && d < 0) over++;
-    }
-
-    if (low > 0) parts.push("原糸は" + low + "番手で不足しています。");
-    if (over > 0) parts.push("予定日を過ぎた号機が" + over + "台あります。");
-    if (low === 0 && over === 0) parts.push("原糸の不足も予定の超過もありません。");
-    return parts.join("");
-  }
+  // 題字の動きは 0.12s + 1.15s。出そろってから少し置いて閉じる
+  const DURATION = quick ? 260 : 1500;
 
   let finished = false;
   function finish() {
@@ -3909,21 +3865,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
     setTimeout(() => { boot.style.display = "none"; }, 560);
   }
   boot.addEventListener("click", finish);
-
-  const start = performance.now();
-  let filled = false;
-  function tick(now) {
-    // 登録内容は読み込みの後に入るので、最初の1コマ目で作る
-    if (!filled) { filled = true; descEl.textContent = describe(); }
-
-    // 点が増えるだけ。％も棒も出さない
-    const t = now - start;
-    loadEl.textContent = "Loading" + ".".repeat(1 + (Math.floor(t / 380) % 3));
-
-    if (t < DURATION) requestAnimationFrame(tick);
-    else if (!finished) setTimeout(finish, reduce ? 0 : 240);
-  }
-  requestAnimationFrame(tick);
+  setTimeout(finish, DURATION);
 })();
 
 /* ============================================================
@@ -3932,13 +3874,9 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.09.02-18";
+const APP_VERSION = "2026.09.02-19";
 
-// 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
-(function showVersion() {
-  const el = $("bootVer");
-  if (el) el.textContent = "Ver " + APP_VERSION;
-})();
+// バージョンは「データの保管」の中に出る（renderBackupStat）
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
