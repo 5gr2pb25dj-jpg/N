@@ -671,6 +671,45 @@
 
   /* ボタン */
   .actions { display: grid; gap: 7px; margin-top: 4px; }
+
+  /* 本日の水揚げの行。号機の数だけ並ぶので、1行1段に収める。 */
+  .drow {
+    display: grid;
+    grid-template-columns: 1fr 62px 82px;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .drow:last-of-type { border-bottom: none; }
+  .drow .dno {
+    display: flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 13px; white-space: nowrap;
+  }
+  .drow .dno i {
+    width: 7px; height: 7px; flex: none; background: var(--st);
+  }
+  .drow .dsku {
+    display: block; font-size: 10.5px; letter-spacing: 0.04em;
+    color: #6d7074; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .drow .dcum {
+    text-align: right; font-size: 12px; font-weight: 300;
+    font-variant-numeric: tabular-nums; color: #55585c;
+  }
+  .drow .dcum small { font-size: 10px; opacity: 0.75; }
+  .drow input { width: 100%; padding: 8px; text-align: right; }
+
+  /* 本日の水揚げは行が号機の数だけ並ぶ。記録ボタンまで50行ぶん
+     スクロールさせない。下端に貼り付けて、いつでも押せるようにする。 */
+  #dailySheet .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin: 4px -12px 0;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--stage);
+  }
   .btn {
     padding: 13px;
     border: none;
@@ -1117,6 +1156,7 @@
 <section class="home" id="yarn" hidden></section>
 
 <div class="fabs" id="fabs">
+  <button class="fab fab-bulk" id="fabDaily" type="button">本日の水揚げ</button>
   <button class="fab fab-bulk" id="fabBulk" type="button">一括登録</button>
   <button class="fab fab-add" id="fabAdd" type="button" aria-label="機械を追加">＋</button>
 </div>
@@ -1307,28 +1347,16 @@
           </button>
         </div>
 
-        <p class="micro" style="margin:14px 0 6px;">on hand ／ 現在の糸量(kg)</p>
-        <div class="grid3">
-          <div class="field">
-            <label for="fHandF" class="yarn-label" style="--yc:var(--yarn-f)">表 kg</label>
-            <input id="fHandF" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
-          </div>
-          <div class="field">
-            <label for="fHandM" class="yarn-label" style="--yc:var(--yarn-m)">中 kg</label>
-            <input id="fHandM" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
-          </div>
-          <div class="field">
-            <label for="fHandB" class="yarn-label" style="--yc:var(--yarn-b)">裏 kg</label>
-            <input id="fHandB" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
-          </div>
-        </div>
+        <p class="micro" style="margin:14px 0 6px;">stock ／ 倉庫の在庫(kg)・番手ごと</p>
+        <div id="fStockBox"></div>
         <div class="quick" style="margin-top:9px;">
           <p class="hint" style="flex:1;">
-            今この号機にある量。不良で多く使った、他の品番へ回した、といった増減はここを直せば、
-            編める反数が下で再計算されます。
+            在庫は<b>番手ごとに1つ</b>で、倉庫にある量です。糸は号機のものではないので、
+            同じ番手を使う号機はすべて同じ数字を見ます。ここを直すと「原糸」の画面にも反映されます。
+            不良で多く使った、他の品番へ回した、といった増減もここで直します。
           </p>
-          <button type="button" id="btnHandReset" class="btn" style="flex:none; padding:8px 12px; font-size:11px;">
-            残り必要量を入れる
+          <button type="button" id="btnBuyToHand" class="btn" style="flex:none; padding:8px 12px; font-size:11px;">
+            買った量を在庫に足す
           </button>
         </div>
       </div>
@@ -1492,21 +1520,8 @@
           </div>
         </div>
 
-        <p class="micro" style="margin:12px 0 6px;">on hand ／ 現在の糸量(kg)</p>
-        <div class="grid3">
-          <div class="field">
-            <label for="nHandF" class="yarn-label" style="--yc:var(--yarn-f)">表</label>
-            <input id="nHandF" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
-          </div>
-          <div class="field">
-            <label for="nHandM" class="yarn-label" style="--yc:var(--yarn-m)">中</label>
-            <input id="nHandM" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
-          </div>
-          <div class="field">
-            <label for="nHandB" class="yarn-label" style="--yc:var(--yarn-b)">裏</label>
-            <input id="nHandB" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
-          </div>
-        </div>
+        <p class="micro" style="margin:12px 0 6px;">stock ／ 倉庫の在庫(kg)・番手ごと</p>
+        <div id="nStockBox"></div>
 
         <div class="calc-row" style="margin-top:11px; padding-top:9px; border-top:1px solid var(--line);">
           <span class="k">合計生産量</span>
@@ -1589,6 +1604,42 @@
   </div>
 </form>
 
+<!-- 本日の水揚げ（まとめて記録） -->
+<div class="overlay" id="dailyOverlay"></div>
+<form class="sheet" id="dailySheet">
+  <div class="sheet-head">
+    <span class="dot"></span>
+    <h2>本日の水揚げ</h2>
+    <span class="micro">daily</span>
+    <button class="sheet-close" type="button" id="closeDaily" aria-label="閉じる">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="sec">
+      <div class="sec-l"><h3>日付</h3><span class="micro">date</span></div>
+      <div class="sec-r">
+        <div class="field">
+          <label for="dDate">記録する日</label>
+          <input id="dDate" type="date">
+        </div>
+        <p class="hint" style="margin-top:7px;">
+          号機ごとにシートを開かずに、一覧のまま反数を入れて一度に記録します。
+          空欄の号機は記録しません。0を入れた号機も記録しません。
+        </p>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-l"><h3>反数</h3><span class="micro">rolls</span></div>
+      <div class="sec-r">
+        <div id="dailyRows"></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" type="submit" id="btnDailySave">記録する</button>
+      <button class="btn" type="button" id="btnDailyCancel">キャンセル</button>
+    </div>
+  </div>
+</form>
+
 <!-- データの保管 -->
 <div class="overlay" id="backupOverlay"></div>
 <div class="sheet" id="backupSheet">
@@ -1656,6 +1707,7 @@
 
 <div class="toast" id="toast" role="status"></div>
 
+<script src="core.js?v=1"></script>
 <script>
 "use strict";
 
@@ -1663,26 +1715,15 @@
    定数
    ============================================================ */
 const STORAGE_KEY = "factory-machines-v1";
-
-const STATUS = {
-  running:    { label: "稼働中",   color: "var(--st-running)" },
-  changeover: { label: "段取り中", color: "var(--st-changeover)" },
-  stopped:    { label: "停止",     color: "var(--st-stopped)" },
-  idle:       { label: "計画停止", color: "var(--st-idle)" },
-};
-
-// 表・中・裏の糸。key はデータ上のフィールド名
-const YARNS = [
-  { key: "f", label: "表", color: "var(--yarn-f)" },
-  { key: "m", label: "中", color: "var(--yarn-m)" },
-  { key: "b", label: "裏", color: "var(--yarn-b)" },
-];
-
-const DEFAULT_LOSS = 3;
-
-const VIEW_KEY = "factory-list-mode";
+const STOCK_KEY   = "factory-stock-v1";
+const MIGRATE_KEY = "factory-stock-migrated";
+const VIEW_KEY    = "factory-list-mode";
 
 let machines = [];
+// 糸の在庫。番手をキーにした1つの台帳。号機には持たせない。
+let stock = {};
+// 移行で号機ごとの値がばらついていた番手（画面で知らせる）
+let stockConflicts = [];
 let filterStatus = "all";
 let listMode = "card";   // "card" | "tile"
 let groupFilter = "";    // 案件で絞り込み中の名前
@@ -1691,200 +1732,8 @@ let query = "";
 let editingId = null; // null = 新規追加
 
 /* ============================================================
-   ユーティリティ
-   ============================================================ */
-function uid() {
-  return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[c]);
-}
-
-function num(v, fallback = 0) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function fmt(n, digits = 2) {
-  return num(n).toFixed(digits);
-}
-
-function todayStr() {
-  const d = new Date();
-  const p = x => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-// "YYYY-MM-DD" を Date に。無効なら null
-function parseDate(s) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ""));
-  if (!m) return null;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  return isNaN(d) ? null : d;
-}
-
-function toDateStr(d) {
-  const p = x => String(x).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-function addDays(dateStr, n) {
-  const d = parseDate(dateStr);
-  if (!d) return "";
-  d.setDate(d.getDate() + n);
-  return toDateStr(d);
-}
-
-// a から b までの日数（b - a）
-function diffDays(a, b) {
-  const da = parseDate(a), db = parseDate(b);
-  if (!da || !db) return null;
-  return Math.round((db - da) / 86400000);
-}
-
-function mdLabel(dateStr) {
-  const d = parseDate(dateStr);
-  return d ? `${d.getMonth() + 1}/${d.getDate()}` : "";
-}
-
-// 号機番号の自然順ソート（"2" < "10"）
-function compareNo(a, b) {
-  return String(a.no).localeCompare(String(b.no), "ja", { numeric: true });
-}
-
-// 次回予定日までの日数（今日=0）。無効な日付は null
-function daysUntil(dateStr) {
-  if (!dateStr) return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
-  if (!m) return null;
-  const target = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  if (isNaN(target)) return null;
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.round((target - today) / 86400000);
-}
-
-function dueText(days) {
-  if (days === null) return "";
-  if (days < 0) return `予定 ${-days}日超過`;
-  if (days === 0) return "予定 今日";
-  return `予定 あと${days}日`;
-}
-
-/* ============================================================
    永続化（旧スキーマのデータも読めるように正規化する）
    ============================================================ */
-// 1件のオーダー（品番・反数・重量・期間・糸の設定）を整える
-function normalizeOrder(o) {
-  o = o || {};
-  const r = o.ratio || {};
-  const c = o.counts || {};
-  const oh = o.onHand || {};
-  const pu = o.purchased || {};
-  const rolls = Math.max(0, Math.round(num(o.rolls)));
-  const weightPerRoll = Math.max(0, num(o.weightPerRoll));
-  return {
-    sku: o.sku || "",
-    rolls,
-    weightPerRoll,
-    totalKg: rolls * weightPerRoll,
-    startDate: o.startDate || "",
-    endDate: o.endDate || "",
-    lossPct: o.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(o.lossPct)),
-    ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
-    counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
-    onHand: { f: Math.max(0, num(oh.f)), m: Math.max(0, num(oh.m)), b: Math.max(0, num(oh.b)) },
-    purchased: { f: Math.max(0, num(pu.f)), m: Math.max(0, num(pu.m)), b: Math.max(0, num(pu.b)) },
-  };
-}
-
-// 生産量に対する表・中・裏の必要糸量
-function yarnNeed(totalKg, remainKg, ratio, lossPct, onHand) {
-  const lossFactor = 1 + num(lossPct) / 100;
-  const need = {};
-  for (const y of YARNS) {
-    const r = num(ratio[y.key]) / 100;
-    const all = totalKg * r * lossFactor;
-    const rest = remainKg * r * lossFactor;
-    const stock = onHand ? Math.max(0, num(onHand[y.key])) : 0;
-    need[y.key] = {
-      all,
-      rest,
-      onHand: stock,
-      gap: stock - rest,               // 現在庫 − 残り必要（今ある糸で足りるか）
-    };
-  }
-  return need;
-}
-
-function normalize(m) {
-  const r = m.ratio || {};
-  const c = m.counts || {};
-  const h = m.onHand || {};
-  const pc = m.purchased || {};
-
-  // 合計生産量は「1反あたりの重量 × 反数」で決まる。
-  // 重量を持たない旧データは、合計生産量から重量を逆算して移行する。
-  const rolls = Math.max(0, Math.round(num(m.rolls)));
-  let weightPerRoll = Math.max(0, num(m.weightPerRoll));
-  let totalKg = Math.max(0, num(m.totalKg));
-  if (weightPerRoll > 0) {
-    totalKg = rolls * weightPerRoll;
-  } else if (totalKg > 0 && rolls > 0) {
-    weightPerRoll = totalKg / rolls;
-  }
-
-  // 水揚げは反数で管理し、kg は重量から導く。
-  // 反数を持たない旧データは、水揚げkgから反数を逆算する。
-  let producedRolls = 0;
-  let producedKg = Math.max(0, num(m.producedKg));
-  if (weightPerRoll > 0) {
-    producedRolls = m.producedRolls != null
-      ? num(m.producedRolls)
-      : producedKg / weightPerRoll;
-    producedRolls = Math.max(0, Math.min(rolls, producedRolls));
-    producedKg = producedRolls * weightPerRoll;
-  }
-
-  // 履歴も反数に統一する
-  const log = (Array.isArray(m.log) ? m.log : [])
-    .filter(e => e && e.d)
-    .map(e => ({
-      d: String(e.d),
-      rolls: e.rolls != null
-        ? Math.max(0, num(e.rolls))
-        : (weightPerRoll > 0 ? Math.max(0, num(e.kg)) / weightPerRoll : 0),
-    }));
-
-  return {
-    id: m.id || uid(),
-    no: String(m.no ?? ""),
-    model: m.model || "",
-    status: STATUS[m.status] ? m.status : "idle",
-    sku: m.sku || "",
-    group: String(m.group ?? "").trim(),
-    uptime: Math.max(0, Math.min(100, Math.round(num(m.uptime)))),
-    startDate: m.startDate || "",
-    nextChange: m.nextChange || "",
-    note: m.note || "",
-    rolls,
-    weightPerRoll,
-    totalKg,
-    producedRolls,
-    producedKg,
-    lossPct: m.lossPct == null ? DEFAULT_LOSS : Math.max(0, num(m.lossPct)),
-    ratio: { f: Math.max(0, num(r.f)), m: Math.max(0, num(r.m)), b: Math.max(0, num(r.b)) },
-    onHand: { f: Math.max(0, num(h.f)), m: Math.max(0, num(h.m)), b: Math.max(0, num(h.b)) },
-    purchased: { f: Math.max(0, num(pc.f)), m: Math.max(0, num(pc.m)), b: Math.max(0, num(pc.b)) },
-    counts: { f: String(c.f ?? ""), m: String(c.m ?? ""), b: String(c.b ?? "") },
-    next: normalizeOrder(m.next),
-    history: Array.isArray(m.history) ? m.history : [],
-    log,
-  };
-}
 
 function loadMachines() {
   try {
@@ -1898,88 +1747,132 @@ function loadMachines() {
   }
 }
 
+function loadStock() {
+  try {
+    const raw = localStorage.getItem(STOCK_KEY);
+    if (!raw) return null;              // null = まだ台帳が無い（移行が要る）
+    return normalizeStock(JSON.parse(raw));
+  } catch (e) {
+    showToast("在庫データの読み込みに失敗しました", true);
+    return {};
+  }
+}
+
+// 号機ごとに散っていた糸量を、番手ごとの台帳へ一度だけ移す
+function migrateStockIfNeeded() {
+  const loaded = loadStock();
+  if (loaded !== null) {
+    stock = loaded;
+    // 移行の食い違いは、読まれるまで消さない。金額に直結するため。
+    try {
+      const raw = localStorage.getItem(MIGRATE_KEY);
+      stockConflicts = raw ? JSON.parse(raw) : [];
+    } catch (e) { stockConflicts = []; }
+    return false;
+  }
+  const r = stockFromMachines(machines);
+  stock = r.stock;
+  stockConflicts = r.conflicts;
+  try {
+    localStorage.setItem(STOCK_KEY, JSON.stringify(stock));
+    if (r.conflicts.length) localStorage.setItem(MIGRATE_KEY, JSON.stringify(r.conflicts));
+  } catch (e) { /* 次回また試みる */ }
+  return true;
+}
+
+// 移行のお知らせを閉じる
+function dismissMigrateNote() {
+  stockConflicts = [];
+  try { localStorage.removeItem(MIGRATE_KEY); } catch (e) { /* 消せなくても次で消える */ }
+  renderAll();
+}
+
+/* ------------------------------------------------------------
+   保存
+
+   書けなかったときに、画面と保存先がずれたままにならないようにする。
+   直前の入力は取り消して、両方を保存済みの状態にそろえる。
+   ------------------------------------------------------------ */
 function saveMachines() {
+  const prevM = localStorage.getItem(STORAGE_KEY);
+  const prevS = localStorage.getItem(STOCK_KEY);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(machines));
+    localStorage.setItem(STOCK_KEY, JSON.stringify(stock));
+    checkStorageHeadroom();
     return true;
   } catch (e) {
-    showToast("保存に失敗しました。ブラウザの設定や空き容量を確認してください", true);
+    // 片方だけ書けている場合があるので、保存先を元に戻す
+    try {
+      if (prevM === null) localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, prevM);
+      if (prevS === null) localStorage.removeItem(STOCK_KEY);
+      else localStorage.setItem(STOCK_KEY, prevS);
+    } catch (e2) { /* 戻せなくても、以下でメモリ側を保存先に合わせる */ }
+
+    // メモリ上の変更も捨てて、保存されている内容に戻す
+    machines = loadMachines();
+    const s2 = loadStock();
+    stock = s2 === null ? {} : s2;
+    showToast("保存できませんでした。直前の入力は取り消しています。空き容量を確認してください", true);
+    try {
+      renderAll();
+      if (editingId) {
+        const m = machines.find(x => x.id === editingId);
+        if (m) { fillForm(m); markEditSaved(); }
+      }
+    } catch (e3) { /* 再描画できなくても保存先は無事 */ }
     return false;
   }
 }
+
+/* ------------------------------------------------------------
+   保存先の空き
+
+   満杯になってから知らせても手遅れなので、手前で知らせる。
+   ------------------------------------------------------------ */
+const STORAGE_LIMIT = 5 * 1024 * 1024;   // Safari は概ねこのあたりで頭打ちになる
+let headroomWarned = 0;
+
+function storageBytes() {
+  try {
+    let n = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      n += k.length + (localStorage.getItem(k) || "").length;
+    }
+    return n * 2;   // UTF-16 として数える
+  } catch (e) {
+    return null;
+  }
+}
+
+function storageRatio() {
+  const b = storageBytes();
+  return b === null ? null : b / STORAGE_LIMIT;
+}
+
+function checkStorageHeadroom() {
+  const r = storageRatio();
+  if (r === null) return;
+  const level = r >= 0.9 ? 2 : r >= 0.7 ? 1 : 0;
+  if (level === 0) { headroomWarned = 0; return; }
+  if (level <= headroomWarned) return;   // 同じ段階では一度だけ
+  headroomWarned = level;
+  const pct = Math.round(r * 100);
+  showToast(level === 2
+    ? `保存先の空きが残りわずかです（${pct}%使用）。書き出してから古い履歴を整理してください`
+    : `保存先を${pct}%使っています。そろそろ書き出しておいてください`, true);
+}
+
 
 /* ============================================================
    計算
    原糸必要量 = 対象生産量(kg) × 交編率(%) × (1 + ロス率(%))
    「残り必要量」は編残（合計生産量 − 水揚げ累計）を基準にする
+   在庫は号機ではなく番手ごとの台帳から引く（core.js）
    ============================================================ */
-function calc(m) {
-  const total = Math.max(0, num(m.totalKg));
-  const produced = Math.max(0, Math.min(total, num(m.producedKg)));
-  const remaining = Math.max(0, total - produced);
-
-  const need = yarnNeed(total, remaining, m.ratio, m.lossPct, m.onHand);
-
-  const rolls = Math.max(0, num(m.rolls));
-  const producedRolls = Math.max(0, Math.min(rolls, num(m.producedRolls)));
-  const remainRolls = Math.max(0, rolls - producedRolls);
-
-  // 水揚げを記録した日数で割って日平均の反数を出す（動かした日だけを母数にする）
-  const workedDays = new Set(m.log.map(e => e.d)).size;
-  const loggedRolls = m.log.reduce((s, e) => s + num(e.rolls), 0);
-  const perDay = workedDays > 0 ? loggedRolls / workedDays : 0;
-
-  // 現在のペースで残りを消化しきる日
-  let projected = "";
-  let daysLeft = null;
-  if (perDay > 0 && remainRolls > 0) {
-    daysLeft = Math.ceil(remainRolls / perDay);
-    projected = addDays(todayStr(), daysLeft);
-  } else if (remainRolls === 0 && rolls > 0) {
-    daysLeft = 0;
-    projected = todayStr();
-  }
-
-  // 予定日に対する遅れ（＋なら遅れ、−なら前倒し）
-  const delay = (projected && m.nextChange)
-    ? diffDays(m.nextChange, projected)
-    : null;
-
-  // 今ある糸で何反編めるか。1反あたりの消費量から逆算する。
-  // ロスで計算どおりに減らないので、在庫を直せばここが都度計算し直される。
-  const perRoll = {};
-  const knitBy = {};
-  let knittable = null;
-  const lossF = 1 + num(m.lossPct) / 100;
-  for (const y of YARNS) {
-    const r = num(m.ratio[y.key]) / 100;
-    const use = num(m.weightPerRoll) * r * lossF; // 1反あたりの消費量
-    perRoll[y.key] = use;
-    if (use <= 0) { knitBy[y.key] = null; continue; }
-    const n2 = num(m.onHand[y.key]) / use;
-    knitBy[y.key] = n2;
-    knittable = knittable === null ? n2 : Math.min(knittable, n2);
-  }
-
-  return {
-    total,
-    produced,
-    remaining,
-    rolls,
-    producedRolls,
-    remainRolls,
-    perDay,
-    perRoll,
-    knitBy,
-    knittable: knittable === null ? null : Math.floor(knittable),
-    projected,
-    daysLeft,
-    delay,
-    progress: rolls > 0 ? (producedRolls / rolls) * 100 : 0,
-    need,
-    ratioSum: YARNS.reduce((s, y) => s + num(m.ratio[y.key]), 0),
-  };
-}
+function calc(m) { return calcFor(m, stock); }
 
 /* ============================================================
    サマリー
@@ -2241,115 +2134,16 @@ function renderGroupOptions() {
    糸は番手の単位で仕入れるため、品番やサイズ違いをまたいで
    同じ番手はひとまとめにする。これが実際の手配単位になる。
    ============================================================ */
-function aggregateByCount() {
-  const map = new Map();
-
-  const add = (o, no, totalKg, restKg, label) => {
-    const nd = yarnNeed(totalKg, restKg, o.ratio, o.lossPct, o.onHand);
-    for (const y of YARNS) {
-      const cnt = (o.counts[y.key] || "").trim();
-      if (!cnt) continue;
-      if (num(o.ratio[y.key]) <= 0) continue; // 使っていない糸は数えない
-      let e = map.get(cnt);
-      if (!e) {
-        e = { count: cnt, all: 0, rest: 0, onHand: 0,
-              users: new Set(), positions: new Set() };
-        map.set(cnt, e);
-      }
-      e.all += nd[y.key].all;
-      e.rest += nd[y.key].rest;
-      e.onHand += nd[y.key].onHand;
-      e.positions.add(y.label);
-      e.users.add(`${no}${label} ${o.sku || "品番未設定"}`);
-    }
-  };
-
-  for (const m of machines) {
-    const c = calc(m);
-    add(m, m.no, c.total, c.remaining, "");
-    add(m.next, m.no, m.next.totalKg, m.next.totalKg, "（次）");
-  }
-
-  // 不足の大きい番手を先に出す
-  return [...map.values()].sort((a, b) => {
-    const ga = a.onHand - a.rest, gb = b.onHand - b.rest;
-    if (ga !== gb) return ga - gb;
-    return a.count.localeCompare(b.count, "ja", { numeric: true });
-  });
-}
-
-function aggregateBySku() {
-  const map = new Map();
-
-  const entry = (key, isGroup) => {
-    let e = map.get(key);
-    if (!e) {
-      e = {
-        name: key, isGroup,
-        skus: new Set(),
-        current: [], next: [],
-        rolls: 0, doneRolls: 0, totalKg: 0, restKg: 0,
-        need: {}, counts: {},
-      };
-      for (const y of YARNS) {
-        e.need[y.key] = { all: 0, rest: 0, onHand: 0 };
-        e.counts[y.key] = new Set();
-      }
-      map.set(key, e);
-    }
-    return e;
-  };
-
-  // 案件が付いていればそれを単位にする。同じ品番のサイズ違い（口径違い）を
-  // 案件でまとめておけば、糸はまとめて計算される。
-  const add = (sku, o, kind, no, rolls, doneRolls, totalKg, restKg, group) => {
-    const g = (group || "").trim();
-    // 品番も反数も無いオーダー（未入力の「次」など）は数えない
-    if (!sku && !(rolls > 0)) return;
-    if (!sku && !g) return;
-    const e = entry(g || sku, !!g);
-    if (sku) e.skus.add(sku);
-    e[kind].push(no);
-    e.rolls += rolls;
-    e.doneRolls += doneRolls;
-    e.totalKg += totalKg;
-    e.restKg += restKg;
-    const nd = yarnNeed(totalKg, restKg, o.ratio, o.lossPct, o.onHand);
-    for (const y of YARNS) {
-      e.need[y.key].all += nd[y.key].all;
-      e.need[y.key].rest += nd[y.key].rest;
-      e.need[y.key].onHand += nd[y.key].onHand;
-      const c = (o.counts[y.key] || "").trim();
-      if (c) e.counts[y.key].add(c);
-    }
-  };
-
-  for (const m of machines) {
-    const c = calc(m);
-    // 進行中のオーダー
-    add(m.sku, m, "current", m.no, m.rolls, c.producedRolls, c.total, c.remaining, m.group);
-    // 次のオーダー（未着手なので残り＝全体）
-    const n = m.next;
-    add(n.sku, n, "next", m.no, n.rolls, 0, n.totalKg, n.totalKg, m.group);
-  }
-
-  // 不足の大きい品番を先に出す
-  return [...map.values()].sort((a, b) => {
-    const la = Math.min(...YARNS.map(y => a.need[y.key].onHand - a.need[y.key].rest));
-    const lb = Math.min(...YARNS.map(y => b.need[y.key].onHand - b.need[y.key].rest));
-    if (la !== lb) return la - lb;
-    return a.name.localeCompare(b.name, "ja", { numeric: true });
-  });
-}
 
 /* ============================================================
    原糸（品番ごと）
    ============================================================ */
 function renderYarn() {
   const box = document.getElementById("yarn");
-  const list = aggregateBySku();
+  const counts = aggregateByCount(machines, stock);
+  const list = aggregateBySku(machines, stock);
 
-  if (list.length === 0) {
+  if (list.length === 0 && counts.length === 0) {
     box.innerHTML = `
       <div class="hcard">
         <div class="hempty">品番を登録すると、ここに品番ごとの原糸必要量がまとまります。</div>
@@ -2357,40 +2151,75 @@ function renderYarn() {
     return;
   }
 
-  // 番手ごと（実際の手配単位）
-  const counts = aggregateByCount();
+  const audit = auditMachines(machines, stock);
+
+  // 移行のお知らせ。号機ごとに入っていた値が食い違っていた番手を挙げる。
+  const migrateNote = stockConflicts.length ? `
+    <div class="hcard">
+      <span class="micro">migrated</span>
+      <h2><span class="bar"></span>在庫のまとめ直し</h2>
+      <p class="hint">
+        糸の在庫を<b>番手ごとの1つの台帳</b>にまとめました。以前は号機ごとに持っていたため、
+        同じ糸を複数の号機に書くと二重に数えていました。
+        値が食い違っていた番手は<b>多いほうを採用</b>しています。下の数字を確かめてください。
+      </p>
+      <ul class="hint" style="margin:6px 0 0; padding-left:1.1em;">
+        ${stockConflicts.map(c => `<li>${escapeHtml(c.label)}: 採用 ${fmt(c.adopted)}kg ／ 入力 ${
+          escapeHtml(c.values.map(v => `${v.no} ${fmt(v.kg)}`).join("・"))}</li>`).join("")}
+      </ul>
+      <div class="actions" style="margin-top:9px;">
+        <button type="button" class="btn" id="btnMigrateOk">確認した</button>
+      </div>
+    </div>` : "";
+
+  // 点検。発注を決める画面なので、計算が当てにならない号機はここで出す。
+  const auditNote = (audit.ratio.length || audit.unbound.length) ? `
+    <div class="hcard">
+      <span class="micro">check</span>
+      <h2><span class="bar"></span>確認が要る設定<span class="n warn">${audit.ratio.length + audit.unbound.length}件</span></h2>
+      ${audit.ratio.length ? `<p class="hint">⚠ <b>交編率の合計が100%ではありません。</b>必要量がその分ずれます。<br>${
+        escapeHtml(audit.ratio.map(r => `${r.no}号機 ${r.sku || "品番未設定"} = ${fmt(r.sum)}%`).join(" ／ "))}</p>` : ""}
+      ${audit.unbound.length ? `<p class="hint">⚠ <b>番手が未設定で在庫と照合できません。</b>必要量だけ出しています。<br>${
+        escapeHtml(audit.unbound.map(u => `${u.no}号機 ${u.sku || "品番未設定"} の${u.pos}糸`).join(" ／ "))}</p>` : ""}
+    </div>` : "";
+
   const countCards = counts.map(e => {
-    const gap = e.onHand - e.rest;
-    const has = e.onHand > 0;
+    const gap = e.gap;
     const cls = gap < -0.05 ? "short" : gap > 0.05 ? "over" : "";
     const users = [...e.users];
+    const shared = e.orders > 1;
     return `
       <div class="hcard">
-        <span class="micro">${escapeHtml([...e.positions].join("・"))}糸 ／ ${users.length}件で使用</span>
+        <span class="micro">${escapeHtml([...e.positions].join("・")) || "未使用"}糸 ／ ${
+          users.length ? `${users.length}件で使用` : "いま使っている号機はありません"}</span>
         <h2><span class="bar"></span>
           <button type="button" class="ylink ctitle" data-count="${escapeHtml(e.count)}">${escapeHtml(e.count)}</button>
-          ${has ? `<span class="n${gap < -0.05 ? " warn" : ""}">${gap >= 0 ? "+" : ""}${fmt(gap)}kg</span>` : ""}
+          <span class="n${gap < -0.05 ? " warn" : ""}">${gap >= 0 ? "+" : ""}${fmt(gap)}kg</span>
         </h2>
         <div class="calc-table">
           <table>
-            <thead><tr><th>残り必要</th><th>現在庫</th><th>過不足</th></tr></thead>
+            <thead><tr><th>残り必要</th><th>在庫（倉庫）</th><th>過不足</th></tr></thead>
             <tbody><tr>
               <td class="num">${fmt(e.rest)}</td>
-              <td class="num">${has ? fmt(e.onHand) : "–"}</td>
-              <td class="num">${has ? `<span class="${cls}">${gap >= 0 ? "+" : ""}${fmt(gap)}</span>` : "–"}</td>
+              <td class="num"><input class="stock-in" type="number" inputmode="decimal" step="0.01" min="0"
+                     value="${e.known ? fmt(e.onHand) : ""}" placeholder="未登録"
+                     data-key="${escapeHtml(e.key)}" data-label="${escapeHtml(e.count)}"
+                     aria-label="${escapeHtml(e.count)} の在庫(kg)"></td>
+              <td class="num"><span class="${cls}">${gap >= 0 ? "+" : ""}${fmt(gap)}</span></td>
             </tr></tbody>
           </table>
         </div>
-        <p class="hint">使用: ${escapeHtml(users.join(" ／ "))}</p>
+        ${shared ? `<p class="hint">この糸は${e.orders}件で使います。在庫はこの1つの数字を全員で分け合います。</p>` : ""}
+        ${users.length ? `<p class="hint">使用: ${escapeHtml(users.join(" ／ "))}</p>` : ""}
       </div>`;
   }).join("");
 
   const countSection = counts.length
-    ? `<p class="ysec"><span class="micro">by yarn count</span>番手ごと（手配の単位）</p>${countCards}`
+    ? `<p class="ysec"><span class="micro">by yarn count</span>番手ごと（手配の単位・在庫はここ）</p>${countCards}`
     : "";
 
-  box.innerHTML = countSection
-    + `<p class="ysec"><span class="micro">by job / sku</span>案件・品番ごと</p>`
+  box.innerHTML = migrateNote + auditNote + countSection
+    + (list.length ? `<p class="ysec"><span class="micro">by job / sku</span>案件・品番ごと（必要量）</p>` : "")
     + list.map(e => {
     const units = [];
     if (e.current.length) units.push(`現在 ${e.current.join("・")}`);
@@ -2398,9 +2227,7 @@ function renderYarn() {
 
     const rows = YARNS.map(y => {
       const n = e.need[y.key];
-      const gap = n.onHand - n.rest;      // 今ある糸で残りが足りるか
-      const has = n.onHand > 0;
-      const cls = gap < -0.05 ? "short" : gap > 0.05 ? "over" : "";
+      if (n.all <= 0 && n.rest <= 0) return "";
       const cnt = [...e.counts[y.key]];
       return `
         <tr>
@@ -2408,8 +2235,7 @@ function renderYarn() {
             ? `<button type="button" class="yname ylink" data-count="${escapeHtml(cnt[0])}" style="--yc:${y.color}">${y.label} ${escapeHtml(cnt.join("/"))}</button>`
             : `<span class="yname" style="--yc:${y.color}">${y.label}糸</span>`}</td>
           <td class="num">${fmt(n.rest)}</td>
-          <td class="num">${has ? fmt(n.onHand) : "–"}</td>
-          <td class="num">${has ? `<span class="${cls}">${gap >= 0 ? "+" : ""}${fmt(gap)}</span>` : "–"}</td>
+          <td class="num">${fmt(n.all)}</td>
         </tr>`;
     }).join("");
 
@@ -2426,27 +2252,32 @@ function renderYarn() {
         </div>
         <div class="calc-table">
           <table>
-            <thead><tr><th>糸</th><th>残り必要</th><th>現在庫</th><th>過不足</th></tr></thead>
+            <thead><tr><th>糸</th><th>残り必要</th><th>全体必要</th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
       </div>`;
   }).join("")
   + `<div class="hcard"><p class="hint">
-      <b>番手ごと</b>は品番やサイズ違いをまたいで同じ糸をまとめた、実際の手配単位です。
-      <b>案件・品番ごと</b>は案件名を付けていればその単位、無ければ品番の単位でまとめます。
+      <b>在庫は番手ごとに1つ</b>です。糸は倉庫にあるものなので、号機には持たせません。
+      同じ番手を何台で使っていても、引き算の相手はこの1つの数字です。
+      <b>過不足</b>は「在庫 − 残り必要」で、マイナスの糸はその量だけ追加手配が要ります。
+      「次」の品番の必要量も最初から含めて数えています。<br>
+      <b>案件・品番ごと</b>は必要量だけを出します。在庫は番手が持っているので、
+      足りるかどうかは上の番手のカードで見てください。
       同じ品番のサイズ違いは、同じ案件名を付けるとひとまとまりになります。
       番手をタップすると、その糸を使っている号機を検索します。
-      「次」は次の品番として登録されている分です。
-      <b>過不足</b>は「現在庫 − 残り必要」で、マイナスの糸はその量だけ追加手配が要ります。
     </p></div>`;
 
   // 番手をタップしたら、その糸を使っている号機を検索する
   box.querySelectorAll(".ylink").forEach(btn =>
     btn.addEventListener("click", () => searchFor(btn.dataset.count)));
+
+  const mo = $("btnMigrateOk");
+  if (mo) mo.addEventListener("click", dismissMigrateNote);
+
 }
 
-// 指定した語で号機一覧を検索する
 function searchFor(text) {
   query = text;
   $("search").value = text;
@@ -2503,18 +2334,11 @@ function renderHome() {
   }).sort((a, b) => daysUntil(a.m.nextChange) - daysUntil(b.m.nextChange));
 
   // 糸不足は品番ごとに集計する（同じ品番を複数号機で流すため）
-  const short = [];
-  for (const e of aggregateBySku()) {
-    for (const y of YARNS) {
-      const n = e.need[y.key];
-      // 今ある糸で残りを編み切れるかで判定する
-      if (n.rest > 0.05) {
-        const gap = n.onHand - n.rest;
-        if (gap < -0.05) short.push({ e, y, lack: -gap });
-      }
-    }
-  }
-  short.sort((a, b) => b.lack - a.lack);
+  // 不足は番手ごとに見る。在庫は番手が持っているので、ここが手配の単位。
+  const short = aggregateByCount(machines, stock)
+    .filter(e => e.rest > 0.05 && e.gap < -0.05)
+    .map(e => ({ e, lack: -e.gap }))
+    .sort((a, b) => b.lack - a.lack);
 
   box.innerHTML = `
     <div class="hcard">
@@ -2525,6 +2349,11 @@ function renderHome() {
         <span class="v num">${fmt(todayKg)}<small>kg</small></span>
         <span class="sub">記録済み ${recorded} / ${machines.length}号機</span>
       </div>
+      <button class="hrow" type="button" data-daily="1" style="--hc:var(--accent); margin-top:8px;">
+        <span class="no" style="min-width:0;">記録</span>
+        <span class="txt">まとめて入力する</span>
+        <span class="val">${recorded ? `残り ${Math.max(0, machines.length - recorded)}号機` : "未記録"}</span>
+      </button>
     </div>
 
     ${groups.length ? `
@@ -2583,11 +2412,11 @@ function renderHome() {
       <span class="micro">yarn shortage</span>
       <h2><span class="bar"></span>糸の不足
         <span class="n${short.length ? " warn" : ""}">${short.length}</span></h2>
-      ${homeRows(short.slice(0, 6), ({ e, y, lack }) => {
-        const cnt = [...e.counts[y.key]].join("/");
+      ${homeRows(short.slice(0, 6), ({ e, lack }) => {
+        const pos = [...e.positions].join("・");
         return `<button class="hrow" type="button" data-sku="1">
-          <span class="no" style="min-width:0;">${escapeHtml(e.name)}</span>
-          <span class="txt">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span>
+          <span class="no" style="min-width:0;">${escapeHtml(e.count)}</span>
+          <span class="txt">${escapeHtml(pos)}糸 ／ ${e.orders}件で使用</span>
           <span class="val bad">−${fmt(lack)}kg</span>
         </button>`;
       })}
@@ -2606,7 +2435,9 @@ function renderHome() {
 
   box.querySelectorAll(".hrow").forEach(r =>
     r.addEventListener("click", () => {
-      if (r.dataset.backup) {                // データの保管シートを開く
+      if (r.dataset.daily) {                 // 本日の水揚げをまとめて記録
+        openDailySheet();
+      } else if (r.dataset.backup) {         // データの保管シートを開く
         openBackupSheet();
       } else if (r.dataset.group) {          // 案件はその号機だけの一覧へ
         groupFilter = r.dataset.group;
@@ -2841,13 +2672,11 @@ function formToMachine() {
       lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
       ratio: { f: $("nRatioF").value, m: $("nRatioM").value, b: $("nRatioB").value },
       counts: { f: $("nCountF").value.trim(), m: $("nCountM").value.trim(), b: $("nCountB").value.trim() },
-      onHand: { f: $("nHandF").value, m: $("nHandM").value, b: $("nHandB").value },
       purchased: { f: $("nBuyF").value, m: $("nBuyM").value, b: $("nBuyB").value },
     },
     history: existing ? existing.history : [],
     lossPct: $("fLoss").value === "" ? DEFAULT_LOSS : $("fLoss").value,
     ratio: { f: $("fRatioF").value, m: $("fRatioM").value, b: $("fRatioB").value },
-    onHand: { f: $("fHandF").value, m: $("fHandM").value, b: $("fHandB").value },
     purchased: { f: $("fBuyF").value, m: $("fBuyM").value, b: $("fBuyB").value },
     log: editingId ? (machines.find(x => x.id === editingId)?.log || []) : [],
   });
@@ -2869,9 +2698,6 @@ function fillForm(m) {
   $("fRatioF").value = m.ratio.f || "";
   $("fRatioM").value = m.ratio.m || "";
   $("fRatioB").value = m.ratio.b || "";
-  $("fHandF").value = m.onHand.f || "";
-  $("fHandM").value = m.onHand.m || "";
-  $("fHandB").value = m.onHand.b || "";
   $("fBuyF").value = m.purchased.f || "";
   $("fBuyM").value = m.purchased.m || "";
   $("fBuyB").value = m.purchased.b || "";
@@ -2891,9 +2717,6 @@ function fillForm(m) {
   $("nCountF").value = n.counts.f;
   $("nCountM").value = n.counts.m;
   $("nCountB").value = n.counts.b;
-  $("nHandF").value = n.onHand.f || "";
-  $("nHandM").value = n.onHand.m || "";
-  $("nHandB").value = n.onHand.b || "";
   $("nBuyF").value = n.purchased.f || "";
   $("nBuyM").value = n.purchased.m || "";
   $("nBuyB").value = n.purchased.b || "";
@@ -2926,6 +2749,101 @@ function renderCountOptions() {
     .join("");
 }
 
+/* ------------------------------------------------------------
+   在庫欄
+
+   在庫は番手ごとに1つ。同じ番手を表と裏で使っていても欄は1つで、
+   原糸の画面でも編集シートでも同じ数字を書き換える。
+   ------------------------------------------------------------ */
+// 完了・切り替えのときに履歴へ残す「残った糸」。
+// 在庫は倉庫単位なので、この号機が使っていた番手の残量を写し取る。
+function leftoverSnapshot(m) {
+  const out = {};
+  for (const y of YARNS) {
+    const cnt = m.counts[y.key];
+    out[y.key] = countKey(cnt) && stockHas(stock, cnt) ? stockKg(stock, cnt) : 0;
+  }
+  return out;
+}
+
+function orderCounts(o) {
+  const out = new Map();
+  for (const y of YARNS) {
+    if (num(o.ratio[y.key]) <= 0) continue;
+    const raw = String(o.counts[y.key] || "").trim();
+    const key = countKey(raw);
+    if (!key) continue;
+    let e = out.get(key);
+    if (!e) { e = { key, label: raw, positions: [] }; out.set(key, e); }
+    e.positions.push(y.label);
+  }
+  return [...out.values()];
+}
+
+function stockRowsHtml(o, editable) {
+  const rows = orderCounts(o);
+  const missing = YARNS
+    .filter(y => num(o.ratio[y.key]) > 0 && !countKey(o.counts[y.key]))
+    .map(y => y.label);
+
+  if (rows.length === 0) {
+    return `<p class="hint">${missing.length
+      ? `番手が未設定です（${escapeHtml(missing.join("・"))}糸）。番手を入れると倉庫の在庫と照らし合わせます。`
+      : "交編率と番手を入れると、ここに倉庫の在庫が出ます。"}</p>`;
+  }
+
+  const body = rows.map(r => {
+    const known = stockHas(stock, r.key);
+    const kg = stockKg(stock, r.key);
+    return `
+      <tr>
+        <td><span class="yname">${escapeHtml(r.positions.join("・"))}糸 ${escapeHtml(r.label)}</span></td>
+        <td class="num">${editable
+          ? `<input class="stock-in" type="number" inputmode="decimal" step="0.01" min="0"
+                   value="${known ? fmt(kg) : ""}" placeholder="未登録"
+                   data-key="${escapeHtml(r.key)}" data-label="${escapeHtml(r.label)}"
+                   aria-label="${escapeHtml(r.label)} の在庫(kg)">`
+          : (known ? fmt(kg) : "–")}</td>
+      </tr>`;
+  }).join("");
+
+  return `<div class="calc-table"><table>
+      <thead><tr><th>番手</th><th>倉庫の在庫(kg)</th></tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`
+    + (missing.length
+        ? `<p class="hint">⚠ ${escapeHtml(missing.join("・"))}糸は番手が未設定なので在庫と照合できません。</p>`
+        : "");
+}
+
+// 台帳への書き込み。保存できなければ元に戻す。
+function writeStock(key, label, value) {
+  if (!key) return false;
+  const had = Object.prototype.hasOwnProperty.call(stock, key);
+  const before = had ? { ...stock[key] } : null;
+  const v = String(value).trim();
+  if (v === "") delete stock[key];
+  else stock[key] = {
+    label: (stock[key] && stock[key].label) || label || key,
+    kg: Math.max(0, num(v)),
+    updatedAt: todayStr(),
+  };
+  if (saveMachines()) return true;
+  if (had) stock[key] = before; else delete stock[key];
+  return false;
+}
+
+// 在庫欄はどの画面にあっても同じ台帳を書き換える
+document.addEventListener("change", e => {
+  const inp = e.target && e.target.closest ? e.target.closest(".stock-in") : null;
+  if (!inp) return;
+  if (!writeStock(inp.dataset.key, inp.dataset.label, inp.value)) return;
+  if (editingId !== null || editSheet.classList.contains("open")) {
+    try { renderCalcPanel(); } catch (e2) { /* シートが閉じていれば不要 */ }
+  }
+  renderAll();
+});
+
 function renderCalcPanel() {
   const m = formToMachine();
   const c = calc(m);
@@ -2946,11 +2864,11 @@ function renderCalcPanel() {
   if (!c.projected) {
     proj.textContent = "–";
     proj.className = "v num";
-    $("projectedHint").textContent = "水揚げを記録すると、そのペースから完了日を予測します。";
+    $("projectedHint").textContent = "水揚げを記録すると、直近のペースから完了日を予測します。";
   } else {
     proj.textContent = mdLabel(c.projected);
     proj.className = "v num" + (c.delay > 0 ? " short" : c.delay != null ? " over" : "");
-    const pace = `日平均 ${fmt(c.perDay, 1)}反`;
+    const pace = `直近の日平均 ${fmt(c.perDay, 1)}反`;
     const rest = c.daysLeft === 0 ? "残りなし" : `残り ${c.remainRolls}反 であと${c.daysLeft}日`;
     const gap = c.delay == null ? ""
       : c.delay > 0 ? `　予定より${c.delay}日遅れ`
@@ -2961,20 +2879,24 @@ function renderCalcPanel() {
 
   // 次のオーダー
   const n = m.next;
-  const nNeed = yarnNeed(n.totalKg, n.totalKg, n.ratio, n.lossPct, n.onHand);
+  const nNeed = yarnNeed(n.totalKg, n.totalKg, n.ratio, n.lossPct);
   $("nTotal").textContent = `${fmt(n.totalKg)} kg`;
   $("nBody").innerHTML = YARNS.map(y => {
     const nd = nNeed[y.key];
-    const has = num(n.onHand[y.key]) > 0;
-    const cls = nd.gap < -0.05 ? "short" : nd.gap > 0.05 ? "over" : "";
+    const cnt = (n.counts[y.key] || "").trim();
+    const known = stockHas(stock, cnt);
+    const kg = stockKg(stock, cnt);
+    const gap = kg - nd.all;
+    const cls = gap < -0.05 ? "short" : gap > 0.05 ? "over" : "";
     return `
       <tr>
-        <td><span class="yname" style="--yc:${y.color}">${y.label}糸${(n.counts[y.key] || "").trim() ? " " + escapeHtml(n.counts[y.key].trim()) : ""}</span></td>
+        <td><span class="yname" style="--yc:${y.color}">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span></td>
         <td class="num">${fmt(nd.all)}</td>
-        <td class="num">${has ? fmt(num(n.onHand[y.key])) : "–"}</td>
-        <td class="num">${has ? `<span class="${cls}">${nd.gap >= 0 ? "+" : ""}${fmt(nd.gap)}</span>` : "–"}</td>
+        <td class="num">${known ? fmt(kg) : "–"}</td>
+        <td class="num">${known ? `<span class="${cls}">${gap >= 0 ? "+" : ""}${fmt(gap)}</span>` : "–"}</td>
       </tr>`;
   }).join("");
+  $("nStockBox").innerHTML = stockRowsHtml(n, false);
 
   // 開始ボタンの案内。途中切り替えになる場合は事前に伝える
   const hint = $("promoteHint");
@@ -2989,24 +2911,28 @@ function renderCalcPanel() {
 
   // 現況：今ある糸で残りを編み切れるか
   const lack = [];
+  let anyStock = false;
   $("cBody").innerHTML = YARNS.map(y => {
-    const n = c.need[y.key];
+    const nd = c.need[y.key];
     const cnt = (m.counts[y.key] || "").trim();
-    const hasStock = n.onHand > 0;
-    const gapCls = n.gap < -0.05 ? "short" : n.gap > 0.05 ? "over" : "";
-    if (n.rest > 0.05 && n.gap < -0.05) {
-      lack.push(`${y.label}${cnt ? " " + cnt : ""} ${fmt(-n.gap)}kg`);
+    const known = stockHas(stock, cnt);
+    const kg = stockKg(stock, cnt);
+    const gap = kg - nd.rest;
+    if (known) anyStock = true;
+    const gapCls = gap < -0.05 ? "short" : gap > 0.05 ? "over" : "";
+    if (known && nd.rest > 0.05 && gap < -0.05) {
+      lack.push(`${y.label}${cnt ? " " + cnt : ""} ${fmt(-gap)}kg`);
     }
     return `
       <tr>
         <td><span class="yname" style="--yc:${y.color}">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span></td>
-        <td class="num">${fmt(n.rest)}</td>
-        <td class="num">${hasStock ? fmt(n.onHand) : "–"}</td>
-        <td class="num">${hasStock ? `<span class="${gapCls}">${n.gap >= 0 ? "+" : ""}${fmt(n.gap)}</span>` : "–"}</td>
+        <td class="num">${fmt(nd.rest)}</td>
+        <td class="num">${known ? fmt(kg) : "–"}</td>
+        <td class="num">${known ? `<span class="${gapCls}">${gap >= 0 ? "+" : ""}${fmt(gap)}</span>` : "–"}</td>
       </tr>`;
   }).join("");
 
-  const anyStock = YARNS.some(y => c.need[y.key].onHand > 0);
+  $("fStockBox").innerHTML = stockRowsHtml(m, true);
   // 判定は「編める反数」と揃える。糸量の過不足だけだと丸めで食い違うため
   const kn = c.knittable;
   const needRolls = Math.round(c.remainRolls);
@@ -3016,7 +2942,7 @@ function renderCalcPanel() {
       ? `　今ある糸では あと${kn}反（残り${needRolls}反に対し${needRolls - kn}反不足）`
       : `　今ある糸で あと${kn}反ぶん`;
   $("gapHint").innerHTML = !anyStock
-    ? "現在の糸量を入れると、残りを編み切れるか・あと何反編めるかを計算します。"
+    ? "番手と在庫を入れると、残りを編み切れるか・あと何反編めるかを計算します。"
     : isShort
       ? `<span class="short">このままでは編み切れません。${lack.length ? "不足 " + escapeHtml(lack.join("／")) : ""}</span>${escapeHtml(knNote)}`
       : `<span class="over">今ある糸で残りを編み切れます。</span>${escapeHtml(knNote)}`;
@@ -3031,7 +2957,7 @@ function renderCalcPanel() {
       <tr>
         <td><span class="yname" style="--yc:${y.color}">${y.label}糸${cnt ? " " + escapeHtml(cnt) : ""}</span></td>
         <td class="num">${use > 0 ? fmt(use) : "–"}</td>
-        <td class="num">${use > 0 ? fmt(num(m.onHand[y.key])) : "–"}</td>
+        <td class="num">${use > 0 && stockHas(stock, cnt) ? fmt(stockKg(stock, cnt)) : "–"}</td>
         <td class="num">${n2 === null ? "–" : `<span class="${isMin ? "short" : ""}">${Math.floor(n2)}反</span>`}</td>
       </tr>`;
   }).join("");
@@ -3047,7 +2973,11 @@ function renderCalcPanel() {
     kEl.className = "v num" + (short ? " short" : " over");
   }
 
-  // 買った量からみた実際の消費。計算上の消費量と比べて実ロス率を出す
+  // 買った量からみた実際の消費。計算上の消費量と比べて実ロス率を出す。
+  // 番手を他のオーダーと共有していると倉庫の残量から消費を割り出せないので、
+  // 何件で使っているかを先に数えておく。
+  const countUse = new Map();
+  for (const e of aggregateByCount(machines, stock)) countUse.set(e.key, e.orders);
   const anyBuy = YARNS.some(y => num(m.purchased[y.key]) > 0);
   $("usedWrap").hidden = !anyBuy;
   if (anyBuy) {
@@ -3056,11 +2986,15 @@ function renderCalcPanel() {
     $("cUsedBody").innerHTML = YARNS.map(y => {
       const cnt = (m.counts[y.key] || "").trim();
       const buy = num(m.purchased[y.key]);
-      const now = num(m.onHand[y.key]);
-      const used = buy - now;                        // 手元から減った分＝使った分
+      // その番手を他のオーダーでも使っていると、倉庫の残量からこの号機の
+      // 消費は割り出せない。共有しているときは実ロス率を出さない。
+      const shared = countUse.get(countKey(cnt)) > 1;
+      const known = stockHas(stock, cnt) && !shared;
+      const now = known ? stockKg(stock, cnt) : null;
+      const used = now === null ? null : buy - now;   // 手元から減った分＝使った分
       // 計算どおりに編めていた場合の消費量（ロス率を含まない正味）
       const plain = c.produced * (num(m.ratio[y.key]) / 100);
-      const real = plain > 0 && used > 0 ? (used / plain - 1) * 100 : null;
+      const real = (used !== null && plain > 0 && used > 0) ? (used / plain - 1) * 100 : null;
       const cls = real === null ? "" : real > num(m.lossPct) + 0.05 ? "short" : "over";
       if (real !== null && real > num(m.lossPct) + 0.05) {
         notes.push(`${y.label}${cnt ? " " + cnt : ""} ${fmt(real)}%`);
@@ -3234,11 +3168,9 @@ function closeEditSheet() {
   "fUptime", "fSku", "fRolls", "fWeight", "fLoss",
   "fRatioF", "fRatioM", "fRatioB",
   "fCountF", "fCountM", "fCountB", "fStart", "fNext", "fGroup",
-  "fHandF", "fHandM", "fHandB",
   "fBuyF", "fBuyM", "fBuyB",
   "nSku", "nRolls", "nWeight", "nStart", "nEnd",
   "nRatioF", "nRatioM", "nRatioB", "nCountF", "nCountM", "nCountB",
-  "nHandF", "nHandM", "nHandB",
   "nBuyF", "nBuyM", "nBuyB",
 ].forEach(id => $(id).addEventListener("input", () => {
   // 反数か重量が変われば合計生産量が変わるので、スライダーの上限も合わせる
@@ -3392,7 +3324,7 @@ $("btnPromote").addEventListener("click", () => {
       closedAt: todayStr(),
       counts: { ...m.counts },
       purchased: { ...m.purchased },
-      leftover: { ...m.onHand },
+      leftover: leftoverSnapshot(m),
       log: m.log,
     });
   }
@@ -3407,7 +3339,6 @@ $("btnPromote").addEventListener("click", () => {
   m.lossPct = n.lossPct;
   m.ratio = { ...n.ratio };
   m.counts = { ...n.counts };
-  m.onHand = { ...n.onHand };
   m.purchased = { ...n.purchased };
   m.producedRolls = 0;
   m.producedKg = 0;
@@ -3467,7 +3398,7 @@ $("btnComplete").addEventListener("click", () => {
     closedAt: todayStr(),
     counts: { ...m.counts },
     purchased: { ...m.purchased },
-    leftover: { ...m.onHand },
+    leftover: leftoverSnapshot(m),
     log: m.log,
   });
 
@@ -3499,29 +3430,164 @@ $("btnComplete").addEventListener("click", () => {
   }
 });
 
-// 在庫欄を「残り必要量」で埋める補助（手配直後の目安として使う）
-// 手配した直後は「買った量＝手元にある量」なので、まとめて入れられるようにする
+// 手配した糸が届いたときに、買った量を倉庫の在庫へ足す。
+// 在庫は番手ごとの1つの数字なので、上書きではなく加算にしてある。
 $("btnBuyToHand").addEventListener("click", () => {
-  $("fHandF").value = $("fBuyF").value;
-  $("fHandM").value = $("fBuyM").value;
-  $("fHandB").value = $("fBuyB").value;
-  renderCalcPanel();
-  showToast("現在の量に反映しました");
-});
-
-$("btnHandReset").addEventListener("click", () => {
-  const c = calc(formToMachine());
-  // 小数第2位に切り上げる。切り捨てると1反ぶん足りなくなることがある
-  const up = v => (Math.ceil(num(v) * 100) / 100).toFixed(2);
-  $("fHandF").value = up(c.need.f.rest);
-  $("fHandM").value = up(c.need.m.rest);
-  $("fHandB").value = up(c.need.b.rest);
-  renderCalcPanel();
+  const m = formToMachine();
+  const add = new Map();       // 番手キー -> 足す量
+  for (const y of YARNS) {
+    const key = countKey(m.counts[y.key]);
+    const kg = Math.max(0, num(m.purchased[y.key]));
+    if (!key || kg <= 0) continue;
+    add.set(key, { label: String(m.counts[y.key]).trim(), kg: num(add.get(key) && add.get(key).kg) + kg });
+  }
+  if (add.size === 0) {
+    showToast("買った量と番手の両方が入っている糸がありません", true);
+    return;
+  }
+  const before = JSON.stringify(stock);
+  for (const [key, v] of add) {
+    const cur = stock[key] ? num(stock[key].kg) : 0;
+    stock[key] = { label: stock[key] ? stock[key].label : v.label, kg: cur + v.kg, updatedAt: todayStr() };
+  }
+  if (saveMachines()) {
+    renderCalcPanel();
+    renderAll();
+    showToast(`${[...add.values()].map(v => fmt(v.kg) + "kg").join(" ／ ")} を在庫に足しました`);
+  } else {
+    try { stock = JSON.parse(before); } catch (e) { /* 保存側で復元済み */ }
+  }
 });
 
 $("btnCancel").addEventListener("click", tryCloseEditSheet);
 editOverlay.addEventListener("click", tryCloseEditSheet);
 $("fabAdd").addEventListener("click", () => openEditSheet(null));
+
+/* ============================================================
+   本日の水揚げ（まとめて記録）
+
+   号機ごとにシートを開くと1台4操作かかる。50台で200操作になるので、
+   一覧のまま反数を入れて一度に記録できるようにする。
+   欄の意味は「その日の合計反数」。すでに記録があれば置き換える。
+   同じ日に二度開いても二重に足されない。
+   ============================================================ */
+const dailyOverlay = document.getElementById("dailyOverlay");
+const dailySheet = document.getElementById("dailySheet");
+
+function dailyTargets() {
+  return machines
+    .filter(m => m.rolls > 0 || m.sku)
+    .sort(compareNo);
+}
+
+function renderDailyRows() {
+  const box = $("dailyRows");
+  const date = $("dDate").value || todayStr();
+  const list = dailyTargets();
+
+  if (list.length === 0) {
+    box.innerHTML = `<div class="hempty">品番が入っている号機がありません。</div>`;
+    return;
+  }
+
+  const rows = list.map(m => {
+    const c = calc(m);
+    const done = m.log.filter(e => e.d === date).reduce((t, e) => t + num(e.rolls), 0);
+    const st = STATUS[m.status] || STATUS.idle;
+    return `
+      <div class="drow" style="--st:${st.color}">
+        <span>
+          <span class="dno"><i title="${st.label}"></i>${escapeHtml(m.no)}号機</span>
+          <span class="dsku">${escapeHtml(m.sku || "品番未設定")}</span>
+        </span>
+        <span class="dcum">${Math.round(c.producedRolls)}<small>/${m.rolls || "–"}</small></span>
+        <input class="daily-in" type="number" inputmode="numeric" step="1" min="0"
+               value="${done > 0 ? Math.round(done) : ""}" placeholder="0"
+               data-id="${escapeHtml(m.id)}"
+               aria-label="${escapeHtml(m.no)}号機 ${escapeHtml(m.sku || "品番未設定")} の反数">
+      </div>`;
+  }).join("");
+
+  box.innerHTML = `
+    <div class="drow" style="--st:transparent">
+      <span class="micro">号機・品番</span>
+      <span class="micro" style="text-align:right;">累計</span>
+      <span class="micro" style="text-align:right;">反数</span>
+    </div>
+    ${rows}
+    <p class="hint" style="margin-top:7px;">
+      欄はその日の<b>合計</b>です。すでに記録がある号機は今の値が入っているので、
+      直せば置き換わります。同じ日に二度開いても二重には足されません。
+    </p>`;
+}
+
+// 入力された値を反映する。反数の上限を超える分は切り詰める。
+function dailyApply(dateStr, entries) {
+  const changed = [];
+  const capped = [];
+  for (const { id, target } of entries) {
+    const m = machines.find(x => x.id === id);
+    if (!m) continue;
+    const existing = m.log.filter(e => e.d === dateStr).reduce((t, e) => t + num(e.rolls), 0);
+    const others = Math.max(0, num(m.producedRolls) - existing);   // その日以外の累計
+    let want = Math.max(0, num(target));
+    if (m.rolls > 0 && others + want > m.rolls) {
+      want = Math.max(0, m.rolls - others);
+      capped.push(m.no);
+    }
+    if (Math.abs(want - existing) < 0.0001) continue;
+
+    m.log = m.log.filter(e => e.d !== dateStr);
+    if (want > 0) m.log.push({ d: dateStr, rolls: want });
+    m.log.sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0));
+    m.producedRolls = others + want;
+    m.producedKg = m.producedRolls * num(m.weightPerRoll);
+    changed.push({ no: m.no, from: existing, to: want });
+  }
+  return { changed, capped };
+}
+
+function openDailySheet() {
+  $("dDate").value = todayStr();
+  renderDailyRows();
+  dailyOverlay.classList.add("open");
+  dailySheet.classList.add("open");
+  dailySheet.scrollTop = 0;
+}
+
+function closeDailySheet() {
+  dailyOverlay.classList.remove("open");
+  dailySheet.classList.remove("open");
+}
+
+$("dDate").addEventListener("change", renderDailyRows);
+$("closeDaily").addEventListener("click", closeDailySheet);
+$("btnDailyCancel").addEventListener("click", closeDailySheet);
+dailyOverlay.addEventListener("click", closeDailySheet);
+
+dailySheet.addEventListener("submit", e => {
+  e.preventDefault();
+  const date = $("dDate").value || todayStr();
+  const entries = [...dailySheet.querySelectorAll(".daily-in")]
+    .filter(inp => inp.value.trim() !== "")
+    .map(inp => ({ id: inp.dataset.id, target: num(inp.value) }));
+
+  if (entries.length === 0) { showToast("入力された号機がありません", true); return; }
+
+  const before = JSON.stringify(machines);
+  const { changed, capped } = dailyApply(date, entries);
+  if (changed.length === 0) { showToast("変わった号機はありません"); return; }
+
+  if (saveMachines()) {
+    closeDailySheet();
+    renderAll();
+    const total = changed.reduce((t, c) => t + c.to - c.from, 0);
+    showToast(`${changed.length}号機を記録しました（合計 ${total >= 0 ? "+" : ""}${Math.round(total)}反）`
+      + (capped.length ? ` ／ ${capped.join("・")}号機は反数の上限で止めました` : ""));
+  } else {
+    try { machines = JSON.parse(before).map(normalize); } catch (e2) { /* 保存側で復元済み */ }
+  }
+});
 
 /* ============================================================
    一括登録
@@ -3565,6 +3631,7 @@ bulkSheet.addEventListener("submit", e => {
 });
 
 $("btnBulkCancel").addEventListener("click", closeBulkSheet);
+$("fabDaily").addEventListener("click", openDailySheet);
 bulkOverlay.addEventListener("click", closeBulkSheet);
 $("fabBulk").addEventListener("click", openBulkSheet);
 
@@ -3596,11 +3663,11 @@ function backupAgeDays() {
   return Math.floor((Date.now() - d.getTime()) / 86400000);
 }
 
-// 書き出しを促すかどうか（未実施、または2週間以上あいている）
+// 書き出しを促すかどうか（未実施、または1週間以上あいている）
 function backupIsStale() {
   if (machines.length === 0) return false;
   const age = backupAgeDays();
-  return age === null || age >= 14;
+  return age === null || age >= 7;
 }
 
 function backupLabel() {
@@ -3625,9 +3692,10 @@ function renderBackupStat() {
 function backupPayload() {
   return JSON.stringify({
     app: "factory-ops",
-    version: 1,
+    version: 2,              // 2 から糸の在庫台帳（番手ごと）を含む
     exportedAt: new Date().toISOString(),
     machines,
+    stock,
   }, null, 2);
 }
 
@@ -3703,26 +3771,35 @@ function parseBackup(text) {
 
   const list = arr.map(normalize).filter(m => String(m.no).trim() !== "");
   if (list.length === 0) throw new Error("号機が入っていません");
-  return list;
+
+  // version 1 の書き出しには台帳が無い。その場合は号機ごとの値から作り直す。
+  const st = (data && data.stock)
+    ? normalizeStock(data.stock)
+    : stockFromMachines(list).stock;
+  return { list, stock: st };
 }
 
 function applyRestore(text) {
-  let list;
+  let parsed;
   try {
-    list = parseBackup(String(text || "").trim());
+    parsed = parseBackup(String(text || "").trim());
   } catch (e) {
     showToast("読み込めませんでした。バックアップの内容を確認してください", true);
     return;
   }
+  const list = parsed.list;
 
   const msg = `${list.length}号機を読み込みます。\n`
-    + `いま登録されている${machines.length}号機はすべて置き換わります。よろしいですか？`;
+    + `いま登録されている${machines.length}号機と糸の在庫はすべて置き換わります。よろしいですか？`;
   if (!confirm(msg)) return;
 
-  const before = machines;
+  const beforeM = machines, beforeS = stock;
   machines = list;
+  stock = parsed.stock;
+  stockConflicts = [];
   if (!saveMachines()) {
-    machines = before;   // 保存できなければ元に戻す
+    machines = beforeM;  // 保存できなければ元に戻す
+    stock = beforeS;
     return;
   }
 
@@ -3785,7 +3862,14 @@ backupOverlay.addEventListener("click", closeBackupSheet);
   const descEl = document.getElementById("bootDesc");
   const loadEl = document.getElementById("bootLoad");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const DURATION = reduce ? 500 : 1600;
+  // 1日に何度も開く道具なので、通しで見せるのはその日の初回だけにする。
+  // 2回目以降は情報だけ一瞬出して本編へ入る。見た目は変えない。
+  const BOOT_KEY = "factory-boot-seen";
+  let seenToday = false;
+  try { seenToday = localStorage.getItem(BOOT_KEY) === todayStr(); } catch (e) { /* 読めなければ通しで見せる */ }
+  try { localStorage.setItem(BOOT_KEY, todayStr()); } catch (e) { /* 記録できなくても支障はない */ }
+
+  const DURATION = reduce ? 500 : seenToday ? 260 : 1600;
 
   // その日の状況を1〜2文で。登録が無ければ案内文にする
   function describe() {
@@ -3798,7 +3882,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
     // 原糸が残り必要量に届いていない番手
     let low = 0;
     try {
-      for (const e of aggregateByCount()) if (e.onHand > 0 && e.onHand < e.rest) low++;
+      for (const e of aggregateByCount(machines, stock)) if (e.rest > 0.05 && e.gap < -0.05) low++;
     } catch (err) { /* 集計できなくても起動は進める */ }
 
     // 予定日を過ぎている号機
@@ -3845,7 +3929,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.08.31-16";
+const APP_VERSION = "2026.09.02-17";
 
 // 起動画面をやめたので、バージョンは「データの保管」の中だけに出る
 (function showVersion() {
@@ -3888,6 +3972,7 @@ try {
 } catch (e) { /* 読めなければ既定のカード表示 */ }
 
 machines = loadMachines();
+migrateStockIfNeeded();
 applyViewToggle();
 renderAll();
 </script>

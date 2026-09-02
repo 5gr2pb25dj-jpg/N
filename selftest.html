@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>計算の検算 ／ 工場稼働管理</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    margin: 0; padding: 16px calc(16px + env(safe-area-inset-left)) 40px;
+    background: #1a1d20; color: #ececec;
+    font-family: -apple-system, BlinkMacSystemFont, system-ui,
+                 "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+    font-size: 13px; line-height: 1.7;
+  }
+  h1 { font-size: 15px; letter-spacing: 0.06em; margin: 0 0 4px; }
+  .lead { color: #9aa0a6; font-size: 11.5px; margin: 0 0 14px; }
+  #sum { padding: 12px; margin-bottom: 12px; font-weight: 700; letter-spacing: 0.04em; }
+  #sum.ok  { background: #1f6b3a; }
+  #sum.bad { background: #8f2f27; }
+  .grp { margin: 16px 0 6px; font-size: 10.5px; letter-spacing: 0.16em;
+         text-transform: uppercase; color: #868c94; }
+  .t { padding: 7px 10px; border-left: 3px solid transparent; background: #232629; margin-bottom: 3px; }
+  .t.ok  { border-left-color: #3f9a63; }
+  .t.bad { border-left-color: #cf4a3f; background: #2c2224; }
+  .t b { font-weight: 600; }
+  .why { display: block; color: #c9ccd0; font-size: 11.5px; margin-top: 2px; }
+  .num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<h1>計算の検算</h1>
+<p class="lead">
+  core.js の計算だけを検査します。画面は動かしません。端末のブラウザでこのまま開けます。
+</p>
+<div id="sum">実行中…</div>
+<div id="out"></div>
+
+<script src="core.js?v=1"></script>
+<script>
+"use strict";
+
+/* ------------------------------------------------------------
+   ごく小さな検査の道具
+   ------------------------------------------------------------ */
+const results = [];
+let group = "";
+function G(name) { group = name; }
+
+function T(name, fn) {
+  let ok = false, why = "";
+  try {
+    const r = fn();
+    ok = r === true || r === undefined;
+    if (typeof r === "string") { ok = false; why = r; }
+  } catch (e) {
+    ok = false;
+    why = String(e && e.message || e);
+  }
+  results.push({ group, name, ok, why });
+}
+
+// 小数の丸め誤差を許して比べる
+function near(actual, expected, tol = 0.005) {
+  if (Math.abs(actual - expected) <= tol) return true;
+  return `期待 ${expected} ／ 実際 ${actual}`;
+}
+function eq(actual, expected) {
+  if (actual === expected) return true;
+  return `期待 ${JSON.stringify(expected)} ／ 実際 ${JSON.stringify(actual)}`;
+}
+
+// 検査用の号機を作る
+function mk(o) {
+  return normalize(Object.assign({
+    no: "1", status: "running", sku: "KN-1200",
+    rolls: 100, weightPerRoll: 20, producedRolls: 0, lossPct: 0,
+    ratio: { f: 100, m: 0, b: 0 }, counts: { f: "30/1", m: "", b: "" },
+    onHand: { f: 0, m: 0, b: 0 }, purchased: { f: 0, m: 0, b: 0 },
+    log: [], history: [], next: {},
+  }, o));
+}
+function ledger(obj) { return normalizeStock(obj); }
+
+/* ============================================================
+   在庫は号機ではなく番手が持つ
+
+   ここが壊れると、足りない糸を「足りる」と表示して発注を逃す。
+   もっとも高くつく間違いなので厚めに検査する。
+   ============================================================ */
+G("在庫の持ち方");
+
+T("同じ品番を2号機で回しても、在庫を二重に数えない", () => {
+  // 倉庫の30/1は3000kgの1山。必要は 100反×20kg×2台 = 4000kg。
+  const ms = [mk({ no: "1" }), mk({ no: "2", id: "m2" })];
+  const st = ledger({ "30/1": 3000 });
+  const e = aggregateByCount(ms, st).find(x => x.key === "30/1");
+  const a = near(e.rest, 4000); if (a !== true) return "必要量: " + a;
+  const b = near(e.onHand, 3000); if (b !== true) return "在庫: " + b;
+  return near(e.gap, -1000);
+});
+
+T("在庫3000・必要4000 を「足りる」と言わない", () => {
+  const ms = [mk({ no: "1" }), mk({ no: "2", id: "m2" })];
+  const e = aggregateByCount(ms, ledger({ "30/1": 3000 })).find(x => x.key === "30/1");
+  if (e.gap >= 0) return "不足しているのに過不足が " + e.gap + " になっている";
+  return true;
+});
+
+T("今のオーダーと次のオーダーで同じ番手を使っても二重に数えない", () => {
+  // 倉庫は500kg。必要は 50反×20 + 40反×20 = 1800kg。
+  const m = mk({
+    rolls: 50,
+    next: { sku: "KN-1300", rolls: 40, weightPerRoll: 20, lossPct: 0,
+            ratio: { f: 100, m: 0, b: 0 }, counts: { f: "30/1", m: "", b: "" } },
+  });
+  const e = aggregateByCount([m], ledger({ "30/1": 500 })).find(x => x.key === "30/1");
+  const a = near(e.rest, 1800); if (a !== true) return "必要量: " + a;
+  const b = near(e.onHand, 500); if (b !== true) return "在庫: " + b;
+  return near(e.gap, -1300);
+});
+
+T("次のオーダーの必要量も最初から数える", () => {
+  const withNext = mk({
+    next: { sku: "X", rolls: 10, weightPerRoll: 20, lossPct: 0,
+            ratio: { f: 100, m: 0, b: 0 }, counts: { f: "30/1", m: "", b: "" } },
+  });
+  const e = aggregateByCount([withNext], ledger({})).find(x => x.key === "30/1");
+  return near(e.rest, 100 * 20 + 10 * 20);
+});
+
+T("台帳に無い番手は在庫0として不足に出す", () => {
+  const e = aggregateByCount([mk({})], ledger({})).find(x => x.key === "30/1");
+  if (e.known !== false) return "台帳に無いのに known が true";
+  return near(e.gap, -2000);
+});
+
+T("使っていない番手も台帳に残っていれば見える", () => {
+  const list = aggregateByCount([mk({})], ledger({ "30/1": 100, "99/9": 55 }));
+  const e = list.find(x => x.key === "99/9");
+  if (!e) return "台帳にある番手が一覧に出ていない";
+  return eq(e.orders, 0);
+});
+
+/* ============================================================
+   番手の表記ゆれ
+   ============================================================ */
+G("番手のそろえ方");
+
+T("全角で打っても同じ山を指す", () => eq(countKey("３０／１"), "30/1"));
+T("前後の空白と大文字小文字をそろえる", () => eq(countKey(" 30/1 "), "30/1"));
+T("空文字は台帳のキーにしない", () => eq(countKey("  "), ""));
+
+T("全角と半角で入力された同じ番手が1つにまとまる", () => {
+  const ms = [mk({ no: "1", counts: { f: "30/1", m: "", b: "" } }),
+              mk({ no: "2", id: "m2", counts: { f: "３０／１", m: "", b: "" } })];
+  const list = aggregateByCount(ms, ledger({ "30/1": 1000 }));
+  const hit = list.filter(x => x.key === "30/1");
+  if (hit.length !== 1) return "番手が " + hit.length + " 個に割れている";
+  return near(hit[0].rest, 4000);
+});
+
+/* ============================================================
+   古いデータからの移行
+
+   号機ごとに散っていた値を足すと二重になる。多いほうを採る。
+   ============================================================ */
+G("移行");
+
+T("同じ値が複数の号機にあるとき、足さずに1つにする", () => {
+  const ms = [mk({ no: "1", onHand: { f: 3000, m: 0, b: 0 } }),
+              mk({ no: "2", id: "m2", onHand: { f: 3000, m: 0, b: 0 } })];
+  const r = stockFromMachines(ms);
+  const a = near(r.stock["30/1"].kg, 3000); if (a !== true) return a;
+  return eq(r.conflicts.length, 0);
+});
+
+T("値が食い違っていたら多いほうを採り、記録に残す", () => {
+  const ms = [mk({ no: "1", onHand: { f: 3000, m: 0, b: 0 } }),
+              mk({ no: "2", id: "m2", onHand: { f: 500, m: 0, b: 0 } })];
+  const r = stockFromMachines(ms);
+  const a = near(r.stock["30/1"].kg, 3000); if (a !== true) return a;
+  if (r.conflicts.length !== 1) return "食い違いが記録されていない";
+  return eq(r.conflicts[0].values.length, 2);
+});
+
+T("番手が入っていない糸は台帳に入れない", () => {
+  const m = mk({ counts: { f: "", m: "", b: "" }, onHand: { f: 900, m: 0, b: 0 } });
+  return eq(Object.keys(stockFromMachines([m]).stock).length, 0);
+});
+
+T("台帳の読み込みで負の値やごみを弾く", () => {
+  const st = normalizeStock({ "30/1": -50, "40/1": "あ", "20/2": { kg: 12.5 } });
+  const a = near(st["30/1"].kg, 0); if (a !== true) return a;
+  const b = near(st["40/1"].kg, 0); if (b !== true) return b;
+  return near(st["20/2"].kg, 12.5);
+});
+
+/* ============================================================
+   必要量とロス率
+   ============================================================ */
+G("必要量");
+
+T("必要量に交編率とロス率が掛かる", () => {
+  // 1000kg × 60% × 1.03
+  const n = yarnNeed(1000, 1000, { f: 60, m: 25, b: 15 }, 3);
+  return near(n.f.all, 618);
+});
+
+T("残り必要量は編残を基準にする", () => {
+  const m = mk({ producedRolls: 40, lossPct: 3 });   // 100反中40反まで済み
+  const c = calcFor(m, ledger({}));
+  const a = near(c.total, 2000); if (a !== true) return "合計: " + a;
+  const b = near(c.remaining, 1200); if (b !== true) return "編残: " + b;
+  return near(c.need.f.rest, 1200 * 1.03);
+});
+
+T("合計生産量は1反あたりの重量×反数で決まる", () => {
+  const m = mk({ rolls: 37, weightPerRoll: 12.5 });
+  return near(m.totalKg, 462.5);
+});
+
+/* ============================================================
+   水揚げの管理
+   ============================================================ */
+G("水揚げ");
+
+T("水揚げkgは反数から導かれる（二重管理にしない）", () => {
+  const m = mk({ producedRolls: 40, weightPerRoll: 20, producedKg: 99999 });
+  return near(m.producedKg, 800);
+});
+
+T("反数を超える水揚げは切り詰める", () => {
+  const m = mk({ rolls: 100, producedRolls: 250 });
+  return near(m.producedRolls, 100);
+});
+
+T("反数を持たない古いデータはkgから逆算する", () => {
+  const m = normalize({ no: "1", rolls: 50, totalKg: 1000, producedKg: 400,
+                        ratio: {}, counts: {}, onHand: {}, log: [] });
+  const a = near(m.weightPerRoll, 20); if (a !== true) return "重量: " + a;
+  return near(m.producedRolls, 20);
+});
+
+T("kgだけの古いログも反数に直る", () => {
+  const m = normalize({ no: "1", rolls: 50, weightPerRoll: 20,
+                        ratio: {}, counts: {}, onHand: {},
+                        log: [{ d: "2026-01-05", kg: 60 }] });
+  return near(m.log[0].rolls, 3);
+});
+
+/* ============================================================
+   ペースと完了予測
+
+   単純平均だと立ち上がりの遅さをいつまでも引きずる。
+   ============================================================ */
+G("完了予測");
+
+T("直近の実績を重く見る", () => {
+  // 古い10日は1反ずつ、直近5日は10反ずつ。単純平均なら4反。
+  const log = [];
+  for (let i = 0; i < 10; i++) log.push({ d: "2026-01-" + String(i + 1).padStart(2, "0"), rolls: 1 });
+  for (let i = 0; i < 5; i++) log.push({ d: "2026-02-" + String(i + 1).padStart(2, "0"), rolls: 10 });
+  const p = paceFrom(log);
+  const plain = 15 / 15 * (10 * 1 + 5 * 10) / 15;
+  if (!(p.perDay > 4)) return "直近が重く見られていない（" + p.perDay.toFixed(2) + "反）";
+  if (!(p.perDay <= 10)) return "直近だけを見すぎている（" + p.perDay.toFixed(2) + "反）";
+  return true;
+});
+
+T("同じ日に複数回記録しても1日として数える", () => {
+  const p = paceFrom([{ d: "2026-01-01", rolls: 2 }, { d: "2026-01-01", rolls: 3 }]);
+  const a = eq(p.workedDays, 1); if (a !== true) return a;
+  return near(p.perDay, 5);
+});
+
+T("記録が無ければペースは0で、予測を出さない", () => {
+  const c = calcFor(mk({ log: [] }), ledger({}));
+  const a = near(c.perDay, 0); if (a !== true) return a;
+  return eq(c.projected, "");
+});
+
+T("全反数が済んでいれば残日数は0", () => {
+  const c = calcFor(mk({ producedRolls: 100 }), ledger({}));
+  return eq(c.daysLeft, 0);
+});
+
+/* ============================================================
+   今ある糸で編める反数
+   ============================================================ */
+G("編める反数");
+
+T("編める反数は台帳の在庫から出す", () => {
+  // 1反あたり 20kg × 100% × 1.0 = 20kg。500kgなら25反。
+  const c = calcFor(mk({ lossPct: 0 }), ledger({ "30/1": 500 }));
+  return eq(c.knittable, 25);
+});
+
+T("ロス率のぶん、編める反数は減る", () => {
+  const c = calcFor(mk({ lossPct: 25 }), ledger({ "30/1": 500 }));
+  return eq(c.knittable, 20);   // 20kg × 1.25 = 25kg/反
+});
+
+T("いちばん足りない糸で頭打ちになる", () => {
+  const m = mk({ lossPct: 0, ratio: { f: 50, m: 50, b: 0 },
+                 counts: { f: "30/1", m: "40/1", b: "" } });
+  // 1反あたり 表10kg・中10kg。表1000kg=100反、中200kg=20反。
+  const c = calcFor(m, ledger({ "30/1": 1000, "40/1": 200 }));
+  return eq(c.knittable, 20);
+});
+
+T("番手が未設定の糸は在庫と結び付けず、印を付ける", () => {
+  const m = mk({ counts: { f: "", m: "", b: "" } });
+  const c = calcFor(m, ledger({ "30/1": 1000 }));
+  if (c.knittable !== null) return "番手が無いのに反数を出している";
+  return eq(c.unbound.length, 1);
+});
+
+/* ============================================================
+   設定の点検
+   ============================================================ */
+G("点検");
+
+T("交編率の合計が100%でない号機を見つける", () => {
+  const m = mk({ ratio: { f: 60, m: 25, b: 10 } });   // 95%
+  const a = auditMachines([m], ledger({}));
+  if (a.ratio.length !== 1) return "見つけられていない";
+  return near(a.ratio[0].sum, 95);
+});
+
+T("合計100%の号機は挙げない", () => {
+  const m = mk({ ratio: { f: 60, m: 25, b: 15 }, counts: { f: "a", m: "b", b: "c" } });
+  return eq(auditMachines([m], ledger({})).ratio.length, 0);
+});
+
+T("交編率はあるのに番手が無い糸を見つける", () => {
+  const m = mk({ ratio: { f: 60, m: 40, b: 0 }, counts: { f: "30/1", m: "", b: "" } });
+  const a = auditMachines([m], ledger({}));
+  if (a.unbound.length !== 1) return "見つけられていない";
+  return eq(a.unbound[0].pos, "中");
+});
+
+/* ============================================================
+   日付まわり
+   ============================================================ */
+G("日付");
+
+T("月をまたいで日数を数える", () => eq(diffDays("2026-01-30", "2026-02-02"), 3));
+T("うるう年をまたぐ", () => eq(diffDays("2024-02-28", "2024-03-01"), 2));
+T("日を足す", () => eq(addDays("2026-12-30", 3), "2027-01-02"));
+T("壊れた日付は null を返す", () => eq(diffDays("2026-13-40", "2026-01-01"), null));
+T("号機番号は数の順に並ぶ", () => {
+  const a = [{ no: "10" }, { no: "2" }, { no: "1" }].sort(compareNo).map(x => x.no);
+  return eq(a.join(","), "1,2,10");
+});
+
+/* ------------------------------------------------------------
+   結果を出す
+   ------------------------------------------------------------ */
+(function report() {
+  const out = document.getElementById("out");
+  const sum = document.getElementById("sum");
+  const bad = results.filter(r => !r.ok);
+  let html = "", last = "";
+  for (const r of results) {
+    if (r.group !== last) { html += `<div class="grp">${r.group}</div>`; last = r.group; }
+    html += `<div class="t ${r.ok ? "ok" : "bad"}"><b>${r.ok ? "○" : "×"} ${r.name}</b>`
+          + (r.why ? `<span class="why">${r.why}</span>` : "")
+          + `</div>`;
+  }
+  out.innerHTML = html;
+  sum.className = bad.length ? "bad" : "ok";
+  sum.textContent = bad.length
+    ? `${bad.length} 件 失敗 ／ 全 ${results.length} 件`
+    : `すべて通過 ／ 全 ${results.length} 件`;
+  document.title = (bad.length ? `失敗${bad.length}` : "OK") + " ／ 計算の検算";
+  window.__results = { total: results.length, failed: bad.length, bad };
+})();
+</script>
+</body>
+</html>
