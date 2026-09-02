@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Laplace ／ 工場稼働管理</title>
+<title>Laplace</title>
 
 <!-- ホーム画面追加（PWA）用設定 -->
 <link rel="manifest" href="manifest.json">
@@ -151,8 +151,10 @@
     width: 13px; height: 13px; background: var(--on-char);
     clip-path: polygon(50% 0, 100% 42%, 100% 100%, 0 100%, 0 42%);
   }
+  /* アプリ名。起動画面の題字と同じ扱いにして、欧文は大文字・字間を開く */
   .topbar h1 {
-    font-size: 15px; font-weight: 700; letter-spacing: 0.03em;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.15em;
+    text-transform: uppercase;
     color: #f2f3f4;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   }
@@ -1050,7 +1052,7 @@
     text-indent: 0.15em;
     text-shadow: 0 2px 26px rgba(0, 0, 0, 0.72), 0 0 80px rgba(0, 0, 0, 0.5);
     opacity: 0;
-    animation: bnWord 1.15s 0.12s cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
+    animation: bnWord 1.35s 0.14s cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
   }
   /* 開き始めの字間は、いちばん狭い端末でも画面からはみ出さない幅にしてある。
      広げすぎると nowrap のまま端が切れる。 */
@@ -1063,7 +1065,7 @@
     background: rgba(255, 255, 255, 0.88);
     box-shadow: 0 0 14px rgba(255, 255, 255, 0.45);
     opacity: 0;
-    animation: bnRule 0.74s 0.46s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+    animation: bnRule 0.85s 0.55s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
   }
   @keyframes bnRule { to { width: 58%; opacity: 1; } }
 
@@ -1093,7 +1095,7 @@
 <header>
   <div class="topbar">
     <span class="home" aria-hidden="true"><span></span></span>
-    <h1>工場稼働管理</h1>
+    <h1>Laplace</h1>
     <span class="ver">operation status</span>
   </div>
 
@@ -3843,19 +3845,12 @@ backupOverlay.addEventListener("click", closeBackupSheet);
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // 1日に何度も開く道具なので、通しで見せるのはその日の初回だけにする。
-  // 2回目以降は題字を最終形のまま一瞬出して本編へ入る。
-  const BOOT_KEY = "factory-boot-seen";
-  let seenToday = false;
-  try { seenToday = localStorage.getItem(BOOT_KEY) === todayStr(); } catch (e) { /* 読めなければ通しで見せる */ }
-  try { localStorage.setItem(BOOT_KEY, todayStr()); } catch (e) { /* 記録できなくても支障はない */ }
+  // 動きを減らす設定の端末では、途中で切ると崩れて見えるので動かさずに出す
+  if (reduce) boot.classList.add("quick");
 
-  // 動きの途中で切ると崩れて見えるので、短い側は動かさずに出す
-  const quick = reduce || seenToday;
-  if (quick) boot.classList.add("quick");
-
-  // 題字の動きは 0.12s + 1.15s。出そろってから少し置いて閉じる
-  const DURATION = quick ? 260 : 1500;
+  // 題字は 0.14s + 1.35s、罫は 0.55s + 0.85s。出そろってから約0.6秒置く。
+  // 毎回この長さを通す。急ぐときは画面をタップすれば飛ばせる。
+  const DURATION = reduce ? 500 : 2000;
 
   let finished = false;
   function finish() {
@@ -3874,7 +3869,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.09.02-19";
+const APP_VERSION = "2026.09.02-20";
 
 // バージョンは「データの保管」の中に出る（renderBackupStat）
 
