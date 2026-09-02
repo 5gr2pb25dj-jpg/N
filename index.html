@@ -1318,15 +1318,10 @@
             <input id="fBuyB" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
           </div>
         </div>
-        <div class="quick" style="margin-top:9px;">
-          <p class="hint" style="flex:1;">
-            この品番のために手配した量。あとから追加で買った分も足してください。
-            実際にどれだけ使ったかの計算に使います。
-          </p>
-          <button type="button" id="btnBuyToHand" class="btn" style="flex:none; padding:8px 12px; font-size:11px;">
-            現在の量にも入れる
-          </button>
-        </div>
+        <p class="hint" style="margin-top:9px;">
+          この品番のために手配した量。あとから追加で買った分も足してください。
+          実際にどれだけ使ったかの計算に使います。
+        </p>
 
         <p class="micro" style="margin:14px 0 6px;">stock ／ 倉庫の在庫(kg)・番手ごと</p>
         <div id="fStockBox"></div>
@@ -3872,7 +3867,7 @@ backupOverlay.addEventListener("click", closeBackupSheet);
    Service Worker で画面はネットワーク優先で取りに行く。
    圏外のときは直前に取得したものを使う。
    ============================================================ */
-const APP_VERSION = "2026.09.02-22";
+const APP_VERSION = "2026.09.02-23";
 
 // バージョンは「データの保管」の中に出る（renderBackupStat）
 
